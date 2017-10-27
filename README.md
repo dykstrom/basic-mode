@@ -1,6 +1,9 @@
 # basic-mode
 
 Package basic-mode provides a major mode for editing BASIC code in GNU Emacs.
+Features include syntax highlighting and indentation.
+
+You can format the region, or the entire buffer, by typing _C-c C-f_.
 
 
 ### Installation
@@ -24,3 +27,7 @@ _basic-indent-offset_. The default value is 4.
 You can also customize the number of columns to use for line numbers, see
 variable _basic-line-number-cols_. The default value is 0, which means not
 using line numbers at all.
+
+Formatting is also affected by the customizable variables
+_basic-delete-trailing-whitespace_ and _delete-trailing-lines_ (from
+simple.el).
