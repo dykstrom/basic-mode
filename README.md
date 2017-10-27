@@ -31,3 +31,5 @@ using line numbers at all.
 Formatting is also affected by the customizable variables
 _basic-delete-trailing-whitespace_ and _delete-trailing-lines_ (from
 simple.el).
+
+[![MELPA](https://melpa.org/packages/basic-mode-badge.svg)](https://melpa.org/#/basic-mode)
