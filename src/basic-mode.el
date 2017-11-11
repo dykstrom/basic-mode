@@ -97,6 +97,12 @@ the actual code. Set this variable to 0 if you do not use line numbers."
   :type 'boolean
   :group 'basic)
 
+(defcustom basic-auto-number nil
+  "*Specifies auto-numbering increments.
+If `nil', auto-numbering is turned off."
+  :type 'integer
+  :group 'basic)
+
 ;; ----------------------------------------------------------------------------
 ;; Variables:
 ;; ----------------------------------------------------------------------------
@@ -371,12 +377,38 @@ trailing lines at the end of the buffer if the variable
         ))))
 
 ;; ----------------------------------------------------------------------------
+;; Line numbering:
+;; ----------------------------------------------------------------------------
+
+(defun basic-current-line-number ()
+  (save-excursion
+    (if (not (basic-has-line-number-p))
+	nil
+      (beginning-of-line)
+      (re-search-forward "\\([0-9]+\\)" (point-at-eol) t)
+      (let ((line-number (match-string-no-properties 1)))
+	(string-to-number line-number)))))
+
+(defun basic-newline-and-number ()
+  "Insert a newline and indent to the proper level.
+If the current line starts with a line number, and auto-numbering is
+turned on (see `basic-auto-number'), insert the next automatic number
+in the beginning of the line."
+  (interactive)
+  (let ((current-line-number (basic-current-line-number)))
+    (newline)
+    (when (and current-line-number basic-auto-number)
+      (insert (int-to-string (+ current-line-number basic-auto-number))))
+    (basic-indent-line)))
+
+;; ----------------------------------------------------------------------------
 ;; BASIC mode:
 ;; ----------------------------------------------------------------------------
 
 (defvar basic-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-c\C-f" 'basic-format-code)
+    (define-key map "\r" 'basic-newline-and-number)
     map)
   "Keymap used in ‘basic-mode'.")
 
