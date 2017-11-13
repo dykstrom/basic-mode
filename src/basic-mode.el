@@ -493,6 +493,7 @@ buffer if only the active region is renumbered."
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-c\C-f" 'basic-format-code)
     (define-key map "\r" 'basic-newline-and-number)
+    (define-key map "\C-c\C-r" 'basic-renumber)
     map)
   "Keymap used in ‘basic-mode'.")
 
