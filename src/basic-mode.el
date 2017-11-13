@@ -100,13 +100,13 @@ the actual code. Set this variable to 0 if you do not use line numbers."
 (defcustom basic-auto-number nil
   "*Specifies auto-numbering increments.
 If `nil', auto-numbering is turned off.  If not `nil', this should be an
-integer defining the interval between line numbers, 10 is a traditional
+integer defining the increment between line numbers, 10 is a traditional
 choice."
   :type '(choice (const :tag "Off" nil)
 		 integer)
   :group 'basic)
 
-(defcustom basic-renumber-interval 10
+(defcustom basic-renumber-increment 10
   "*Default auto-numbering increment."
   :type 'integer
   :group 'basic)
