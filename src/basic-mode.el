@@ -409,6 +409,82 @@ in the beginning of the line."
       (insert (int-to-string (+ current-line-number basic-auto-number))))
     (basic-indent-line)))
 
+(defun basic-find-jumps ()
+  (let ((jump-targets (make-hash-table)))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "go\\(sub\\|to\\)[ \t]*\\([0-9]+\\)" nil t)
+	(let ((target (string-to-number (match-string-no-properties 2))))
+	  (unless (gethash target jump-targets)
+	    (puthash target nil jump-targets))
+	  (push (point-marker) (gethash target jump-targets)))))
+    jump-targets))
+
+(defun basic-renumber (start increment)
+  "Renumbers the lines of the buffer or region.
+The new numbers begin with START and use INCREMENT between
+line numbers.
+
+START defaults to the line number at the start of buffer or
+region.  If no line number is present there, it uses
+`basic-renumber-increment' as a fallback starting point.
+
+INCREMENT defaults to `basic-renumber-increment'.
+
+Jumps in the code are updated with the new line numbers.
+
+If the region is active, only lines within the region are
+renumbered, but jumps into the region are updated to match the
+new numbers even if the jumps are from outside the region.
+
+No attempt is made to ensure unique line numbers within the
+buffer if only the active region is renumbered."
+  (interactive (list (let ((default (save-excursion
+				      (goto-char (if (use-region-p)
+						     (region-beginning)
+						   (point-min)))
+				      (or (basic-current-line-number)
+					  basic-renumber-increment))))
+		      (string-to-number (read-string
+					 (format "Starting with (default %d): "
+						 default)
+					 nil nil
+					 (int-to-string default))))
+		     (string-to-number (read-string
+					(format "Increment (default %d): "
+						basic-renumber-increment)
+					nil nil
+					(int-to-string basic-renumber-increment)))))
+  (let ((new-line-number start)
+	(jump-list (basic-find-jumps))
+	(point-start (if (use-region-p) (region-beginning) (point-min)))
+	(point-end (if (use-region-p) (region-end) (point-max)))
+	current-line-number)
+    (save-excursion
+      (goto-char point-start)
+      (while (and (not (eobp))
+		  (<= (point) point-end))
+	(unless (looking-at "^$")
+	  (setq current-line-number (string-to-number (basic-remove-line-number)))
+	  (let ((jump-locations (gethash current-line-number jump-list)))
+	    (save-excursion
+	      (dolist (p jump-locations)
+		(goto-char (marker-position p))
+		(set-marker p nil)
+		(backward-kill-word 1)
+		(insert (int-to-string new-line-number)))))
+	  (indent-line-to (basic-calculate-indent))
+	  (beginning-of-line)
+	  (insert (basic-format-line-number new-line-number))
+	  (setq new-line-number (+ new-line-number increment)))
+	(forward-line 1)
+	(end-of-line)))
+    (maphash (lambda (target sources)
+	       (dolist (m sources)
+		 (when (marker-position m)
+		   (set-marker m nil))))
+	     jump-list)))
+
 ;; ----------------------------------------------------------------------------
 ;; BASIC mode:
 ;; ----------------------------------------------------------------------------
