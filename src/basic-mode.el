@@ -404,6 +404,7 @@ turned on (see `basic-auto-number'), insert the next automatic number
 in the beginning of the line."
   (interactive)
   (let ((current-line-number (basic-current-line-number)))
+    (basic-indent-line)
     (newline)
     (when (and current-line-number basic-auto-number)
       (insert (int-to-string (+ current-line-number basic-auto-number))))
