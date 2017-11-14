@@ -413,8 +413,8 @@ in the beginning of the line."
   (let ((jump-targets (make-hash-table)))
     (save-excursion
       (goto-char (point-min))
-      (while (re-search-forward "go\\(sub\\|to\\)[ \t]*\\([0-9]+\\)" nil t)
-	(let ((target (string-to-number (match-string-no-properties 2))))
+      (while (re-search-forward "\\(go\\(sub\\|to\\)\\|then\\)[ \t]*\\([0-9]+\\)" nil t)
+	(let ((target (string-to-number (match-string-no-properties 3))))
 	  (unless (gethash target jump-targets)
 	    (puthash target nil jump-targets))
 	  (push (point-marker) (gethash target jump-targets)))))
