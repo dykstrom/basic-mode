@@ -401,13 +401,36 @@ trailing lines at the end of the buffer if the variable
   "Insert a newline and indent to the proper level.
 If the current line starts with a line number, and auto-numbering is
 turned on (see `basic-auto-number'), insert the next automatic number
-in the beginning of the line."
+in the beginning of the line.
+
+If opening a new line between two numbered lines, and the next
+automatic number would be >= the line number of the existing next
+line, we try to find a midpoint between the two existing lines
+and use that as the next number.  If no more unused line numbers
+are available between the existing lines, just increment by one,
+even if that creates overlaps."
   (interactive)
-  (let ((current-line-number (basic-current-line-number)))
+  (let* ((current-line-number (basic-current-line-number))
+	 (next-line-number (save-excursion
+			     (end-of-line)
+			     (and (forward-word 1)
+				  (basic-current-line-number))))
+	 (new-line-number (and current-line-number
+			       basic-auto-number
+			       (+ current-line-number basic-auto-number))))
     (basic-indent-line)
     (newline)
-    (when (and current-line-number basic-auto-number)
-      (insert (int-to-string (+ current-line-number basic-auto-number))))
+    (when new-line-number
+      (when (and next-line-number
+		 (<= next-line-number
+		     new-line-number))
+	(setq new-line-number
+	      (+ current-line-number
+		 (truncate (- next-line-number current-line-number)
+			   2)))
+	(when (= new-line-number current-line-number)
+	  (setq new-line-number (1+ new-line-number))))
+      (insert (int-to-string new-line-number)))
     (basic-indent-line)))
 
 ;; ----------------------------------------------------------------------------
