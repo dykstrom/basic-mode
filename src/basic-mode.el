@@ -446,7 +446,7 @@ buffer if only the active region is renumbered."
 				      (or (basic-current-line-number)
 					  basic-renumber-increment))))
 		      (string-to-number (read-string
-					 (format "Starting with (default %d): "
+					 (format "Renumber, starting with (default %d): "
 						 default)
 					 nil nil
 					 (int-to-string default))))
