@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.2.0
+;; Version: 0.3.0-SNAPSHOT
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "24.3"))
@@ -55,6 +55,8 @@
 
 ;;; Change Log:
 
+;;  0.3.0  2017-??-??  Auto-numbering support.
+;;                     Thanks to Peder O. Klingenberg.
 ;;  0.2.0  2017-10-27  Format region/buffer.
 ;;  0.1.3  2017-10-11  Even more syntax highlighting.
 ;;  0.1.2  2017-10-04  More syntax highlighting.
@@ -115,7 +117,7 @@ choice."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.2.0"
+(defconst basic-mode-version "0.3.0-SNAPSHOT"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
