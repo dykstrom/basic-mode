@@ -111,6 +111,12 @@ choice."
   :type 'integer
   :group 'basic)
 
+(defcustom basic-renumber-unnumbered-lines t
+  "*If non-nil, lines without line numbers are given new line numbers
+while renumbering.  Completely empty lines are never numbered."
+  :type 'boolean
+  :group 'basic)
+
 ;; ----------------------------------------------------------------------------
 ;; Variables:
 ;; ----------------------------------------------------------------------------
@@ -438,7 +444,12 @@ renumbered, but jumps into the region are updated to match the
 new numbers even if the jumps are from outside the region.
 
 No attempt is made to ensure unique line numbers within the
-buffer if only the active region is renumbered."
+buffer if only the active region is renumbered.
+
+If `basic-renumber-unnumbered-lines' is non-nil, all non-empty
+lines will get numbers.  If it is nil, only lines that already
+have numbers are included in the renumbering.
+"
   (interactive (list (let ((default (save-excursion
 				      (goto-char (if (use-region-p)
 						     (region-beginning)
@@ -458,24 +469,25 @@ buffer if only the active region is renumbered."
   (let ((new-line-number start)
 	(jump-list (basic-find-jumps))
 	(point-start (if (use-region-p) (region-beginning) (point-min)))
-	(point-end (if (use-region-p) (region-end) (point-max)))
-	current-line-number)
+	(point-end (if (use-region-p) (region-end) (point-max))))
     (save-excursion
       (goto-char point-start)
       (while (not (eobp))
 	(unless (looking-at "^[ \t]*$")
-	  (setq current-line-number (string-to-number (basic-remove-line-number)))
-	  (let ((jump-locations (gethash current-line-number jump-list)))
-	    (save-excursion
-	      (dolist (p jump-locations)
-		(goto-char (marker-position p))
-		(set-marker p nil)
-		(backward-kill-word 1)
-		(insert (int-to-string new-line-number)))))
-	  (indent-line-to (basic-calculate-indent))
-	  (beginning-of-line)
-	  (insert (basic-format-line-number new-line-number))
-	  (setq new-line-number (+ new-line-number increment)))
+	  (let ((current-line-number (string-to-number (basic-remove-line-number))))
+	    (when (or basic-renumber-unnumbered-lines
+		      (not (zerop current-line-number)))
+	      (let ((jump-locations (gethash current-line-number jump-list)))
+		(save-excursion
+		  (dolist (p jump-locations)
+		    (goto-char (marker-position p))
+		    (set-marker p nil)
+		    (backward-kill-word 1)
+		    (insert (int-to-string new-line-number)))))
+	      (indent-line-to (basic-calculate-indent))
+	      (beginning-of-line)
+	      (insert (basic-format-line-number new-line-number))
+	      (setq new-line-number (+ new-line-number increment)))))
 	(forward-line 1)))
     (maphash (lambda (target sources)
 	       (dolist (m sources)
