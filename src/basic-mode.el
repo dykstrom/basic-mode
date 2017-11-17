@@ -97,6 +97,20 @@ the actual code. Set this variable to 0 if you do not use line numbers."
   :type 'boolean
   :group 'basic)
 
+(defcustom basic-auto-number nil
+  "*Specifies auto-numbering increments.
+If `nil', auto-numbering is turned off.  If not `nil', this should be an
+integer defining the increment between line numbers, 10 is a traditional
+choice."
+  :type '(choice (const :tag "Off" nil)
+		 integer)
+  :group 'basic)
+
+(defcustom basic-renumber-increment 10
+  "*Default auto-numbering increment."
+  :type 'integer
+  :group 'basic)
+
 ;; ----------------------------------------------------------------------------
 ;; Variables:
 ;; ----------------------------------------------------------------------------
@@ -371,12 +385,62 @@ trailing lines at the end of the buffer if the variable
         ))))
 
 ;; ----------------------------------------------------------------------------
+;; Line numbering:
+;; ----------------------------------------------------------------------------
+
+(defun basic-current-line-number ()
+  (save-excursion
+    (if (not (basic-has-line-number-p))
+	nil
+      (beginning-of-line)
+      (re-search-forward "\\([0-9]+\\)" (point-at-eol) t)
+      (let ((line-number (match-string-no-properties 1)))
+	(string-to-number line-number)))))
+
+(defun basic-newline-and-number ()
+  "Insert a newline and indent to the proper level.
+If the current line starts with a line number, and auto-numbering is
+turned on (see `basic-auto-number'), insert the next automatic number
+in the beginning of the line.
+
+If opening a new line between two numbered lines, and the next
+automatic number would be >= the line number of the existing next
+line, we try to find a midpoint between the two existing lines
+and use that as the next number.  If no more unused line numbers
+are available between the existing lines, just increment by one,
+even if that creates overlaps."
+  (interactive)
+  (let* ((current-line-number (basic-current-line-number))
+	 (next-line-number (save-excursion
+			     (end-of-line)
+			     (and (forward-word 1)
+				  (basic-current-line-number))))
+	 (new-line-number (and current-line-number
+			       basic-auto-number
+			       (+ current-line-number basic-auto-number))))
+    (basic-indent-line)
+    (newline)
+    (when new-line-number
+      (when (and next-line-number
+		 (<= next-line-number
+		     new-line-number))
+	(setq new-line-number
+	      (+ current-line-number
+		 (truncate (- next-line-number current-line-number)
+			   2)))
+	(when (= new-line-number current-line-number)
+	  (setq new-line-number (1+ new-line-number))))
+      (insert (int-to-string new-line-number)))
+    (basic-indent-line)))
+
+;; ----------------------------------------------------------------------------
 ;; BASIC mode:
 ;; ----------------------------------------------------------------------------
 
 (defvar basic-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-c\C-f" 'basic-format-code)
+    (define-key map "\r" 'basic-newline-and-number)
     map)
   "Keymap used in ‘basic-mode'.")
 
