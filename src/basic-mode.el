@@ -462,9 +462,8 @@ buffer if only the active region is renumbered."
 	current-line-number)
     (save-excursion
       (goto-char point-start)
-      (while (and (not (eobp))
-		  (<= (point) point-end))
-	(unless (looking-at "^$")
+      (while (not (eobp))
+	(unless (looking-at "^[ \t]*$")
 	  (setq current-line-number (string-to-number (basic-remove-line-number)))
 	  (let ((jump-locations (gethash current-line-number jump-list)))
 	    (save-excursion
@@ -477,8 +476,7 @@ buffer if only the active region is renumbered."
 	  (beginning-of-line)
 	  (insert (basic-format-line-number new-line-number))
 	  (setq new-line-number (+ new-line-number increment)))
-	(forward-line 1)
-	(end-of-line)))
+	(forward-line 1)))
     (maphash (lambda (target sources)
 	       (dolist (m sources)
 		 (when (marker-position m)
