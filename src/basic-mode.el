@@ -411,7 +411,8 @@ in the beginning of the line."
   (interactive)
   (let ((current-line-number (basic-current-line-number)))
     (newline)
-    (when (and current-line-number basic-auto-number)
+    (when (and current-line-number basic-auto-number
+	       (not (zerop basic-line-number-cols)))
       (insert (int-to-string (+ current-line-number basic-auto-number))))
     (basic-indent-line)))
 
@@ -456,45 +457,47 @@ have numbers are included in the renumbering.
 						   (point-min)))
 				      (or (basic-current-line-number)
 					  basic-renumber-increment))))
-		      (string-to-number (read-string
-					 (format "Renumber, starting with (default %d): "
-						 default)
-					 nil nil
-					 (int-to-string default))))
+		       (string-to-number (read-string
+					  (format "Renumber, starting with (default %d): "
+						  default)
+					  nil nil
+					  (int-to-string default))))
 		     (string-to-number (read-string
 					(format "Increment (default %d): "
 						basic-renumber-increment)
 					nil nil
 					(int-to-string basic-renumber-increment)))))
-  (let ((new-line-number start)
-	(jump-list (basic-find-jumps))
-	(point-start (if (use-region-p) (region-beginning) (point-min)))
-	(point-end (if (use-region-p) (region-end) (point-max))))
-    (save-excursion
-      (goto-char point-start)
-      (while (and (not (eobp))
-		  (< (point) point-end))
-	(unless (looking-at "^[ \t]*$")
-	  (let ((current-line-number (string-to-number (basic-remove-line-number))))
-	    (when (or basic-renumber-unnumbered-lines
-		      (not (zerop current-line-number)))
-	      (let ((jump-locations (gethash current-line-number jump-list)))
-		(save-excursion
-		  (dolist (p jump-locations)
-		    (goto-char (marker-position p))
-		    (set-marker p nil)
-		    (backward-kill-word 1)
-		    (insert (int-to-string new-line-number)))))
-	      (indent-line-to (basic-calculate-indent))
-	      (beginning-of-line)
-	      (insert (basic-format-line-number new-line-number))
-	      (setq new-line-number (+ new-line-number increment)))))
-	(forward-line 1)))
-    (maphash (lambda (target sources)
-	       (dolist (m sources)
-		 (when (marker-position m)
-		   (set-marker m nil))))
-	     jump-list)))
+  (if (zerop basic-line-number-cols)
+      (message "No room for numbers.  Please adjust `basic-line-number-cols'.")
+    (let ((new-line-number start)
+	  (jump-list (basic-find-jumps))
+	  (point-start (if (use-region-p) (region-beginning) (point-min)))
+	  (point-end (if (use-region-p) (region-end) (point-max))))
+      (save-excursion
+	(goto-char point-start)
+	(while (and (not (eobp))
+		    (< (point) point-end))
+	  (unless (looking-at "^[ \t]*$")
+	    (let ((current-line-number (string-to-number (basic-remove-line-number))))
+	      (when (or basic-renumber-unnumbered-lines
+			(not (zerop current-line-number)))
+		(let ((jump-locations (gethash current-line-number jump-list)))
+		  (save-excursion
+		    (dolist (p jump-locations)
+		      (goto-char (marker-position p))
+		      (set-marker p nil)
+		      (backward-kill-word 1)
+		      (insert (int-to-string new-line-number)))))
+		(indent-line-to (basic-calculate-indent))
+		(beginning-of-line)
+		(insert (basic-format-line-number new-line-number))
+		(setq new-line-number (+ new-line-number increment)))))
+	  (forward-line 1)))
+      (maphash (lambda (target sources)
+		 (dolist (m sources)
+		   (when (marker-position m)
+		     (set-marker m nil))))
+	       jump-list))))
 
 ;; ----------------------------------------------------------------------------
 ;; BASIC mode:
