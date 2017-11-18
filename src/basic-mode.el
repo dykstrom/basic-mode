@@ -472,7 +472,8 @@ have numbers are included in the renumbering.
 	(point-end (if (use-region-p) (region-end) (point-max))))
     (save-excursion
       (goto-char point-start)
-      (while (not (eobp))
+      (while (and (not (eobp))
+		  (< (point) point-end))
 	(unless (looking-at "^[ \t]*$")
 	  (let ((current-line-number (string-to-number (basic-remove-line-number))))
 	    (when (or basic-renumber-unnumbered-lines
