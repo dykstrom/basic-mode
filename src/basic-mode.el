@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.2.0
+;; Version: 0.3.0-SNAPSHOT
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "24.3"))
@@ -55,6 +55,8 @@
 
 ;;; Change Log:
 
+;;  0.3.0  2017-??-??  Auto-numbering support.
+;;                     Thanks to Peder O. Klingenberg.
 ;;  0.2.0  2017-10-27  Format region/buffer.
 ;;  0.1.3  2017-10-11  Even more syntax highlighting.
 ;;  0.1.2  2017-10-04  More syntax highlighting.
@@ -121,7 +123,7 @@ while renumbering.  Completely empty lines are never numbered."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.2.0"
+(defconst basic-mode-version "0.3.0-SNAPSHOT"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -407,13 +409,37 @@ trailing lines at the end of the buffer if the variable
   "Insert a newline and indent to the proper level.
 If the current line starts with a line number, and auto-numbering is
 turned on (see `basic-auto-number'), insert the next automatic number
-in the beginning of the line."
+in the beginning of the line.
+
+If opening a new line between two numbered lines, and the next
+automatic number would be >= the line number of the existing next
+line, we try to find a midpoint between the two existing lines
+and use that as the next number.  If no more unused line numbers
+are available between the existing lines, just increment by one,
+even if that creates overlaps."
   (interactive)
-  (let ((current-line-number (basic-current-line-number)))
+  (let* ((current-line-number (basic-current-line-number))
+	 (next-line-number (save-excursion
+			     (end-of-line)
+			     (and (forward-word 1)
+				  (basic-current-line-number))))
+	 (new-line-number (and current-line-number
+			       basic-auto-number
+			       (+ current-line-number basic-auto-number))))
+    (basic-indent-line)
     (newline)
-    (when (and current-line-number basic-auto-number
+    (when (and new-line-number
 	       (not (zerop basic-line-number-cols)))
-      (insert (int-to-string (+ current-line-number basic-auto-number))))
+      (when (and next-line-number
+		 (<= next-line-number
+		     new-line-number))
+	(setq new-line-number
+	      (+ current-line-number
+		 (truncate (- next-line-number current-line-number)
+			   2)))
+	(when (= new-line-number current-line-number)
+	  (setq new-line-number (1+ new-line-number))))
+      (insert (int-to-string new-line-number)))
     (basic-indent-line)))
 
 (defun basic-find-jumps ()
