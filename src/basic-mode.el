@@ -113,6 +113,12 @@ choice."
   :type 'integer
   :group 'basic)
 
+(defcustom basic-renumber-unnumbered-lines t
+  "*If non-nil, lines without line numbers are given new line numbers
+while renumbering.  Completely empty lines are never numbered."
+  :type 'boolean
+  :group 'basic)
+
 ;; ----------------------------------------------------------------------------
 ;; Variables:
 ;; ----------------------------------------------------------------------------
@@ -422,7 +428,8 @@ even if that creates overlaps."
 			       (+ current-line-number basic-auto-number))))
     (basic-indent-line)
     (newline)
-    (when new-line-number
+    (when (and new-line-number
+	       (not (zerop basic-line-number-cols)))
       (when (and next-line-number
 		 (<= next-line-number
 		     new-line-number))
@@ -435,6 +442,89 @@ even if that creates overlaps."
       (insert (int-to-string new-line-number)))
     (basic-indent-line)))
 
+(defun basic-find-jumps ()
+  (let ((jump-targets (make-hash-table)))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "\\(go\\(sub\\|to\\)\\|then\\)[ \t]*\\([0-9]+\\)" nil t)
+	(let ((target (string-to-number (match-string-no-properties 3))))
+	  (unless (gethash target jump-targets)
+	    (puthash target nil jump-targets))
+	  (push (point-marker) (gethash target jump-targets)))))
+    jump-targets))
+
+(defun basic-renumber (start increment)
+  "Renumbers the lines of the buffer or region.
+The new numbers begin with START and use INCREMENT between
+line numbers.
+
+START defaults to the line number at the start of buffer or
+region.  If no line number is present there, it uses
+`basic-renumber-increment' as a fallback starting point.
+
+INCREMENT defaults to `basic-renumber-increment'.
+
+Jumps in the code are updated with the new line numbers.
+
+If the region is active, only lines within the region are
+renumbered, but jumps into the region are updated to match the
+new numbers even if the jumps are from outside the region.
+
+No attempt is made to ensure unique line numbers within the
+buffer if only the active region is renumbered.
+
+If `basic-renumber-unnumbered-lines' is non-nil, all non-empty
+lines will get numbers.  If it is nil, only lines that already
+have numbers are included in the renumbering.
+"
+  (interactive (list (let ((default (save-excursion
+				      (goto-char (if (use-region-p)
+						     (region-beginning)
+						   (point-min)))
+				      (or (basic-current-line-number)
+					  basic-renumber-increment))))
+		       (string-to-number (read-string
+					  (format "Renumber, starting with (default %d): "
+						  default)
+					  nil nil
+					  (int-to-string default))))
+		     (string-to-number (read-string
+					(format "Increment (default %d): "
+						basic-renumber-increment)
+					nil nil
+					(int-to-string basic-renumber-increment)))))
+  (if (zerop basic-line-number-cols)
+      (message "No room for numbers.  Please adjust `basic-line-number-cols'.")
+    (let ((new-line-number start)
+	  (jump-list (basic-find-jumps))
+	  (point-start (if (use-region-p) (region-beginning) (point-min)))
+	  (point-end (if (use-region-p) (region-end) (point-max))))
+      (save-excursion
+	(goto-char point-start)
+	(while (and (not (eobp))
+		    (< (point) point-end))
+	  (unless (looking-at "^[ \t]*$")
+	    (let ((current-line-number (string-to-number (basic-remove-line-number))))
+	      (when (or basic-renumber-unnumbered-lines
+			(not (zerop current-line-number)))
+		(let ((jump-locations (gethash current-line-number jump-list)))
+		  (save-excursion
+		    (dolist (p jump-locations)
+		      (goto-char (marker-position p))
+		      (set-marker p nil)
+		      (backward-kill-word 1)
+		      (insert (int-to-string new-line-number)))))
+		(indent-line-to (basic-calculate-indent))
+		(beginning-of-line)
+		(insert (basic-format-line-number new-line-number))
+		(setq new-line-number (+ new-line-number increment)))))
+	  (forward-line 1)))
+      (maphash (lambda (target sources)
+		 (dolist (m sources)
+		   (when (marker-position m)
+		     (set-marker m nil))))
+	       jump-list))))
+
 ;; ----------------------------------------------------------------------------
 ;; BASIC mode:
 ;; ----------------------------------------------------------------------------
@@ -443,6 +533,7 @@ even if that creates overlaps."
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-c\C-f" 'basic-format-code)
     (define-key map "\r" 'basic-newline-and-number)
+    (define-key map "\C-c\C-r" 'basic-renumber)
     map)
   "Keymap used in ‘basic-mode'.")
 
