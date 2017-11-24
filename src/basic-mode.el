@@ -508,11 +508,10 @@ have numbers are included in the renumbering."
     (let ((new-line-number start)
 	  (jump-list (basic-find-jumps))
 	  (point-start (if (use-region-p) (region-beginning) (point-min)))
-	  (point-end (if (use-region-p) (copy-marker (region-end)) (point-max))))
+	  (point-end (if (use-region-p) (copy-marker (region-end)) (copy-marker (point-max)))))
       (save-excursion
 	(goto-char point-start)
-	(while (and (not (eobp))
-		    (< (point) point-end))
+	(while (< (point) point-end)
 	  (unless (looking-at "^[ \t]*$")
 	    (let ((current-line-number (string-to-number (basic-remove-line-number))))
 	      (when (or basic-renumber-unnumbered-lines
@@ -529,8 +528,7 @@ have numbers are included in the renumbering."
 		(insert (basic-format-line-number new-line-number))
 		(setq new-line-number (+ new-line-number increment)))))
 	  (forward-line 1)))
-      (when (markerp point-end)
-	(set-marker point-end nil))
+      (set-marker point-end nil)
       (maphash (lambda (target sources)
 		 (dolist (m sources)
 		   (when (marker-position m)
