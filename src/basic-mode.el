@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.3.0
+;; Version: 0.3.1
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "24.3"))
@@ -37,7 +37,7 @@
 
 ;; Installation:
 
-;; The easiest way to install basic-mode is from MELPA, please see
+;; The recommended way to install basic-mode is from MELPA, please see
 ;; https://melpa.org.
 ;;
 ;; To install manually, place basic-mode.el in your load-path, and add
@@ -65,6 +65,7 @@
 
 ;;; Change Log:
 
+;;  0.3.1  2017-11-25  Renumbering on-goto and bug fixes.
 ;;  0.3.0  2017-11-20  Auto-numbering and renumbering support.
 ;;                     Thanks to Peder O. Klingenberg.
 ;;  0.2.0  2017-10-27  Format region/buffer.
@@ -134,7 +135,7 @@ empty lines are never numbered."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.3.0"
+(defconst basic-mode-version "0.3.1"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -215,15 +216,24 @@ beginning of a line.")
   ;; If line needs indentation
   (when (or (not (basic-line-number-indented-correctly-p))
             (not (basic-code-indented-correctly-p)))
-    (let* ((original-col (- (current-column) basic-line-number-cols))
-           (original-indent-col (basic-current-indent))
-           (calculated-indent-col (basic-calculate-indent)))
-      (basic-indent-line-to calculated-indent-col)
-      ;; Move point to a good place after indentation
-      (goto-char (+ (point-at-bol)
-                    calculated-indent-col
-                    (max (- original-col original-indent-col) 0)
-                    basic-line-number-cols)))))
+    ;; Set basic-line-number-cols to reflect the actual code
+    (let* ((actual-line-number-cols
+            (if (not (basic-has-line-number-p))
+                0
+              (let ((line-number (basic-current-line-number)))
+                (1+ (length (number-to-string line-number))))))
+           (basic-line-number-cols
+            (max actual-line-number-cols basic-line-number-cols)))
+      ;; Calculate new indentation
+      (let* ((original-col (- (current-column) basic-line-number-cols))
+             (original-indent-col (basic-current-indent))
+             (calculated-indent-col (basic-calculate-indent)))
+        (basic-indent-line-to calculated-indent-col)
+        ;; Move point to a good place after indentation
+        (goto-char (+ (point-at-bol)
+                      calculated-indent-col
+                      (max (- original-col original-indent-col) 0)
+                      basic-line-number-cols))))))
 
 (defun basic-calculate-indent ()
   "Calculate the indent for the current line of code.
@@ -408,13 +418,13 @@ trailing lines at the end of the buffer if the variable
 ;; ----------------------------------------------------------------------------
 
 (defun basic-current-line-number ()
+  "Return line number of current line, or nil if no line number."
   (save-excursion
-    (if (not (basic-has-line-number-p))
-	nil
+    (when (basic-has-line-number-p)
       (beginning-of-line)
       (re-search-forward "\\([0-9]+\\)" (point-at-eol) t)
       (let ((line-number (match-string-no-properties 1)))
-	(string-to-number line-number)))))
+        (string-to-number line-number)))))
 
 (defun basic-newline-and-number ()
   "Insert a newline and indent to the proper level.
