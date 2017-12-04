@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.3.1
+;; Version: 0.3.2
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "24.3"))
@@ -65,6 +65,7 @@
 
 ;;; Change Log:
 
+;;  0.3.2  2017-12-04  Indentation of one-line-loops.
 ;;  0.3.1  2017-11-25  Renumbering on-goto and bug fixes.
 ;;  0.3.0  2017-11-20  Auto-numbering and renumbering support.
 ;;                     Thanks to Peder O. Klingenberg.
@@ -135,7 +136,7 @@ empty lines are never numbered."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.3.1"
+(defconst basic-mode-version "0.3.2"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -290,13 +291,13 @@ of a line or statement, see `basic-decrease-indent-keywords-bol'."
     (beginning-of-line)
     (re-search-forward "[^0-9 \t\n]" (point-at-eol) t)
     (or (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol)
-	(let ((match nil))
-	  (basic-code-search-backward)
-	  (beginning-of-line)
-	  (while (and (not match)
-		      (re-search-forward ":[ \t\n]*" (point-at-eol) t))
-	    (setq match (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol)))
-	  match))))
+        (let ((match nil))
+          (basic-code-search-backward)
+          (beginning-of-line)
+          (while (and (not match)
+                      (re-search-forward ":[ \t\n]*" (point-at-eol) t))
+            (setq match (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol)))
+          match))))
 
 (defun basic-current-indent ()
   "Return the indent column of the current code line.
