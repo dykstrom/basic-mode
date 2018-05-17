@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.3.2
+;; Version: 0.3.3
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "24.3"))
@@ -65,6 +65,7 @@
 
 ;;; Change Log:
 
+;;  0.3.3  2018-05-17  Fixed endless loop bug.
 ;;  0.3.2  2017-12-04  Indentation of one-line-loops.
 ;;  0.3.1  2017-11-25  Renumbering on-goto and bug fixes.
 ;;  0.3.0  2017-11-20  Auto-numbering and renumbering support.
@@ -178,8 +179,8 @@ beginning of a line or after a statement separator (:).")
   "Regexp string of symbols to highlight as constants.")
 
 (defconst basic-function-regexp
-  (regexp-opt '("abs" "asc" "atn" "chr$" "command$" "cos" "exp" "fix"
-                "instr" "int" "lcase$" "len" "left$" "log" "log10" "mid$"
+  (regexp-opt '("abs" "asc" "atn" "cdbl" "cint" "chr$" "command$" "cos" "exp"
+                "fix" "instr" "int" "lcase$" "len" "left$" "log" "log10" "mid$"
                 "pi" "right$" "rnd" "sgn" "sin" "sqr" "str$" "tab" "tan"
                 "ucase$" "usr" "val")
               'symbols)
@@ -257,9 +258,11 @@ Code inside a block is indented `basic-indent-offset' extra characters."
 (defun basic-code-search-backward ()
   "Search backward from point for a line containing code."
   (beginning-of-line)
-  (re-search-backward "[^ \t\n\"']" nil t)
+  (skip-chars-backward " \t\n")
   (while (and (not (bobp)) (basic-comment-or-string-p))
-    (re-search-backward "[^ \t\n\"']" nil t)))
+    (skip-chars-backward " \t\n")
+    (when (not (bobp))
+      (forward-char -1))))
 
 (defun basic-match-symbol-at-point-p (regexp)
   "Return non-nil if the symbol at point does match REGEXP."
