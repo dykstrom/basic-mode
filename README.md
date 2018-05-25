@@ -26,7 +26,7 @@ following lines of code to your init file:
 TAB indents the current line of BASIC code, including line numbers if available.
 If the region is active, TAB indents all lines in the region.
 
-_C-c C-f_ formats the entire buffer; indents all lines, and removes any extra 
+_C-c C-f_ formats the entire buffer; indents all lines, and removes any extra
 whitespace. If the region is active, _C-c C-f_ formats all lines in the region.
 
 
@@ -39,12 +39,19 @@ to turn on line numbers.
 With line numbers turned on, RET will start new lines with a fresh line number.
 The line number increment is defined by variable basic-auto-number. _C-c C-r_
 will renumber all lines in the entire buffer, including any jumps in the code.
-The line number increment used when renumbering is defined by variable 
-basic-renumber-increment. If the region is active, _C-c C-r_ renumbers all lines 
+The line number increment used when renumbering is defined by variable
+basic-renumber-increment. If the region is active, _C-c C-r_ renumbers all lines
 in the region instead.
 
 With line numbers turned on, _C-c C-f_ will also respect line numbers, and the
 value configured in basic-line-number-cols while formatting.
+
+
+## Navigation
+
+Package basic-mode also provides additional functionality to navigate in the
+source code. _M-._ will find and move to the line number at point, and _M-,_
+will move back again. For more information, see function xref-find-definitions.
 
 
 ## Configuration
