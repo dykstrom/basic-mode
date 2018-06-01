@@ -47,7 +47,7 @@ With line numbers turned on, _C-c C-f_ will also respect line numbers, and the
 value configured in basic-line-number-cols while formatting.
 
 
-## Navigation
+### Navigation
 
 Package basic-mode also provides additional functionality to navigate in the
 source code. _M-._ will find and move to the line number at point, and _M-,_
