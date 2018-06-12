@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.4.0
+;; Version: 0.4.1
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "24.3"))
@@ -35,8 +35,8 @@
 ;; renumber all lines in the region, or the entire buffer, including
 ;; any jumps in the code.
 ;;
-;; Type M-. to goto the line number at point, and type M-, to go back
-;; again, see function `xref-find-definitions'.
+;; Type M-. to goto the line number or label at point, and type M-,
+;; to go back again, see function `xref-find-definitions'.
 
 ;; Installation:
 
@@ -68,6 +68,7 @@
 
 ;;; Change Log:
 
+;;  0.4.1  2018-06-12  Highlighting, indentation and lookup of labels.
 ;;  0.4.0  2018-05-25  Added goto line number.
 ;;  0.3.3  2018-05-17  Fixed endless loop bug.
 ;;  0.3.2  2017-12-04  Indentation of one-line-loops.
@@ -141,7 +142,7 @@ empty lines are never numbered."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.4.0"
+(defconst basic-mode-version "0.4.1"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -170,11 +171,15 @@ beginning of a line or after a statement separator (:).")
   "List of font-lock faces used for comments and strings.")
 
 (defconst basic-comment-regexp
-  "\\_<rem\\_>.*$"
+  "\\_<rem\\_>.*\n"
   "Regexp string that matches a comment until the end of the line.")
 
 (defconst basic-linenum-regexp
   "^[ \t]*\\([0-9]+\\)"
+  "Regexp string of symbols to highlight as line numbers.")
+
+(defconst basic-label-regexp
+  "^[ \t]*\\([a-zA-Z][a-zA-Z0-9_.]*:\\)"
   "Regexp string of symbols to highlight as line numbers.")
 
 (defconst basic-constant-regexp
@@ -197,15 +202,17 @@ beginning of a line or after a statement separator (:).")
   "Regexp string of symbols to highlight as builtins.")
 
 (defconst basic-keyword-regexp
-  (regexp-opt '("call" "def" "do" "else" "elseif" "end" "endif" "error" "exit"
-                "fn" "for" "gosub" "goto" "if" "loop" "next" "on" "step"
-                "repeat" "return" "sub" "then" "to" "until" "wend" "while")
+  (regexp-opt '("call" "def" "defbol" "defdbl" "defint" "defsng" "defstr" "do"
+                "else" "elseif" "end" "endif" "error" "exit" "fn" "for" "gosub"
+                "goto" "if" "loop" "next" "on" "step" "repeat" "return" "sub"
+                "then" "to" "until" "wend" "while")
               'symbols)
   "Regexp string of symbols to highlight as keywords.")
 
 (defconst basic-font-lock-keywords
   (list (list basic-comment-regexp 0 'font-lock-comment-face)
         (list basic-linenum-regexp 0 'font-lock-constant-face)
+        (list basic-label-regexp 0 'font-lock-constant-face)
         (list basic-constant-regexp 0 'font-lock-constant-face)
         (list basic-keyword-regexp 0 'font-lock-keyword-face)
         (list basic-function-regexp 0 'font-lock-function-name-face)
@@ -247,10 +254,19 @@ The current line is indented like the previous line, unless inside a block.
 Code inside a block is indented `basic-indent-offset' extra characters."
   (let ((previous-indent-col (basic-previous-indent))
         (increase-indent (basic-increase-indent-p))
-        (decrease-indent (basic-decrease-indent-p)))
-    (max 0 (+ previous-indent-col
-              (if increase-indent basic-indent-offset 0)
-              (if decrease-indent (- basic-indent-offset) 0)))))
+        (decrease-indent (basic-decrease-indent-p))
+        (label (basic-label-p)))
+    (if label
+        0
+      (max 0 (+ previous-indent-col
+                (if increase-indent basic-indent-offset 0)
+                (if decrease-indent (- basic-indent-offset) 0))))))
+
+(defun basic-label-p ()
+  "Return non-nil if current line does start with a label."
+  (save-excursion
+    (goto-char (line-beginning-position))
+    (looking-at basic-label-regexp)))
 
 (defun basic-comment-or-string-p ()
   "Return non-nil if point is in a comment or string."
@@ -263,7 +279,7 @@ Code inside a block is indented `basic-indent-offset' extra characters."
   "Search backward from point for a line containing code."
   (beginning-of-line)
   (skip-chars-backward " \t\n")
-  (while (and (not (bobp)) (basic-comment-or-string-p))
+  (while (and (not (bobp)) (or (basic-comment-or-string-p) (basic-label-p)))
     (skip-chars-backward " \t\n")
     (when (not (bobp))
       (forward-char -1))))
@@ -379,6 +395,13 @@ non-blank character after the line number."
     ;; Add line number again
     (beginning-of-line)
     (insert formatted-number)))
+
+(defun basic-electric-colon ()
+  "Insert a colon and re-indent line."
+  (interactive)
+  (insert ?\:)
+  (when (not (basic-comment-or-string-p))
+    (basic-indent-line)))
 
 ;; ----------------------------------------------------------------------------
 ;; Formatting:
@@ -592,9 +615,13 @@ have numbers are included in the renumbering."
 Return a list of xref objects with the definitions found.
 If no definitions can be found, return nil."
   (let (xrefs)
-    (let ((line-number (basic-xref-find-line-number identifier)))
+    (let ((line-number (basic-xref-find-line-number identifier))
+          (label (basic-xref-find-label identifier)))
       (when line-number
-        (push (basic-xref-make-xref (format "%s (line number)" identifier) (current-buffer) line-number) xrefs)))))
+        (push (basic-xref-make-xref (format "%s (line number)" identifier) (current-buffer) line-number) xrefs))
+      (when label
+        (push (basic-xref-make-xref (format "%s (label)" identifier) (current-buffer) label) xrefs))
+      xrefs)))
 
 (defun basic-xref-find-line-number (line-number)
   "Return the buffer position where LINE-NUMBER is defined.
@@ -605,6 +632,14 @@ If LINE-NUMBER is not found, return nil."
       (when (re-search-forward (concat "^\\s-*\\(" line-number "\\)\\s-") nil t)
         (match-beginning 1)))))
 
+(defun basic-xref-find-label (label)
+  "Return the buffer position where LABEL is defined.
+If LABEL is not found, return nil."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward (concat "^\\s-*\\(" label "\\):") nil t)
+      (match-beginning 1))))
+
 ;; ----------------------------------------------------------------------------
 ;; BASIC mode:
 ;; ----------------------------------------------------------------------------
@@ -614,6 +649,7 @@ If LINE-NUMBER is not found, return nil."
     (define-key map "\C-c\C-f" 'basic-format-code)
     (define-key map "\r" 'basic-newline-and-number)
     (define-key map "\C-c\C-r" 'basic-renumber)
+    (define-key map "\:" 'basic-electric-colon)
     map)
   "Keymap used in ‘basic-mode'.")
 
