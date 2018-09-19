@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.4.1
+;; Version: 0.4.2
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "24.3"))
@@ -35,8 +35,9 @@
 ;; renumber all lines in the region, or the entire buffer, including
 ;; any jumps in the code.
 ;;
-;; Type M-. to goto the line number or label at point, and type M-,
-;; to go back again, see function `xref-find-definitions'.
+;; Type M-. to lookup the line number, label, or variable at point,
+;; and type M-, to go back again. See also function
+;; `xref-find-definitions'.
 
 ;; Installation:
 
@@ -68,6 +69,7 @@
 
 ;;; Change Log:
 
+;;  0.4.2  2018-09-19  Lookup of dimmed variables.
 ;;  0.4.1  2018-06-12  Highlighting, indentation and lookup of labels.
 ;;  0.4.0  2018-05-25  Added goto line number.
 ;;  0.3.3  2018-05-17  Fixed endless loop bug.
@@ -196,18 +198,23 @@ beginning of a line or after a statement separator (:).")
   "Regexp string of symbols to highlight as functions.")
 
 (defconst basic-builtin-regexp
-  (regexp-opt '("and" "cls" "data" "dim" "input" "let" "mat" "mod" "not" "or"
+  (regexp-opt '("and" "cls" "data" "input" "let" "mat" "mod" "not" "or"
                 "peek" "poke" "print" "read" "restore" "troff" "tron" "xor")
               'symbols)
   "Regexp string of symbols to highlight as builtins.")
 
 (defconst basic-keyword-regexp
-  (regexp-opt '("call" "def" "defbol" "defdbl" "defint" "defsng" "defstr" "do"
-                "else" "elseif" "end" "endif" "error" "exit" "fn" "for" "gosub"
-                "goto" "if" "loop" "next" "on" "step" "repeat" "return" "sub"
-                "then" "to" "until" "wend" "while")
+  (regexp-opt '("as" "call" "def" "defbol" "defdbl" "defint" "defsng" "defstr"
+                "dim" "do" "else" "elseif" "end" "endif" "error" "exit" "fn"
+                "for" "gosub" "goto" "if" "loop" "next" "on" "step" "repeat"
+                "return" "sub" "then" "to" "until" "wend" "while")
               'symbols)
   "Regexp string of symbols to highlight as keywords.")
+
+(defconst basic-type-regexp
+  (regexp-opt '("boolean" "double" "integer" "single" "string")
+              'symbols)
+  "Regexp string of symbols to highlight as types.")
 
 (defconst basic-font-lock-keywords
   (list (list basic-comment-regexp 0 'font-lock-comment-face)
@@ -215,6 +222,7 @@ beginning of a line or after a statement separator (:).")
         (list basic-label-regexp 0 'font-lock-constant-face)
         (list basic-constant-regexp 0 'font-lock-constant-face)
         (list basic-keyword-regexp 0 'font-lock-keyword-face)
+        (list basic-type-regexp 0 'font-lock-type-face)
         (list basic-function-regexp 0 'font-lock-function-name-face)
         (list basic-builtin-regexp 0 'font-lock-builtin-face))
   "Describes how to syntax highlight keywords in `basic-mode' buffers.")
@@ -616,11 +624,14 @@ Return a list of xref objects with the definitions found.
 If no definitions can be found, return nil."
   (let (xrefs)
     (let ((line-number (basic-xref-find-line-number identifier))
-          (label (basic-xref-find-label identifier)))
+          (label (basic-xref-find-label identifier))
+          (variables (basic-xref-find-variable identifier)))
       (when line-number
         (push (basic-xref-make-xref (format "%s (line number)" identifier) (current-buffer) line-number) xrefs))
       (when label
         (push (basic-xref-make-xref (format "%s (label)" identifier) (current-buffer) label) xrefs))
+      (cl-loop for variable in variables do
+            (push (basic-xref-make-xref (format "%s (variable)" identifier) (current-buffer) variable) xrefs))
       xrefs)))
 
 (defun basic-xref-find-line-number (line-number)
@@ -639,6 +650,16 @@ If LABEL is not found, return nil."
     (goto-char (point-min))
     (when (re-search-forward (concat "^\\s-*\\(" label "\\):") nil t)
       (match-beginning 1))))
+
+(defun basic-xref-find-variable (variable)
+  "Return a list of buffer positions where VARIABLE is defined.
+If VARIABLE is not found, return nil."
+  (save-excursion
+    (goto-char (point-min))
+    (let (positions)
+      (while (re-search-forward (concat "\\_<dim\\_>.*\\_<\\(" variable "\\)\\_>") nil t)
+        (push (match-beginning 1) positions))
+      positions)))
 
 ;; ----------------------------------------------------------------------------
 ;; BASIC mode:
