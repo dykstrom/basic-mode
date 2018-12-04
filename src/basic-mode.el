@@ -250,11 +250,9 @@ beginning of a line or after a statement separator (:).")
              (original-indent-col (basic-current-indent))
              (calculated-indent-col (basic-calculate-indent)))
         (basic-indent-line-to calculated-indent-col)
-        ;; Move point to a good place after indentation
-        (goto-char (+ (point-at-bol)
-                      calculated-indent-col
-                      (max (- original-col original-indent-col) 0)
-                      basic-line-number-cols))))))
+	(move-to-column (+ calculated-indent-col
+			   (max (- original-col original-indent-col) 0)
+			   basic-line-number-cols))))))
 
 (defun basic-calculate-indent ()
   "Calculate the indent for the current line of code.
@@ -337,8 +335,7 @@ The columns allocated to the line number are ignored."
     (beginning-of-line)
     ;; Skip line number and spaces
     (skip-chars-forward "0-9 \t" (point-at-eol))
-    (let ((indent (- (point) (point-at-bol))))
-      (- indent basic-line-number-cols))))
+    (- (current-column) basic-line-number-cols)))
 
 (defun basic-previous-indent ()
   "Return the indent column of the previous code line.
