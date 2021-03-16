@@ -1,10 +1,10 @@
 ;;; basic-mode.el --- major mode for editing BASIC code
 
-;; Copyright (C) 2017-2018 Johan Dykstrom
+;; Copyright (C) 2017-2021 Johan Dykstrom
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.4.2
+;; Version: 0.4.3
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "24.3"))
@@ -69,6 +69,8 @@
 
 ;;; Change Log:
 
+;;  0.4.3  2021-03-16  Improved indentation with tabs.
+;;                     Thanks to Jeff Spaulding.
 ;;  0.4.2  2018-09-19  Lookup of dimmed variables.
 ;;  0.4.1  2018-06-12  Highlighting, indentation and lookup of labels.
 ;;  0.4.0  2018-05-25  Added goto line number.
@@ -144,7 +146,7 @@ empty lines are never numbered."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.4.1"
+(defconst basic-mode-version "0.4.3"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
