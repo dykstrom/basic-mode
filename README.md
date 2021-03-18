@@ -109,3 +109,4 @@ in some way:
 </table>
 
 [![MELPA](https://melpa.org/packages/basic-mode-badge.svg)](https://melpa.org/#/basic-mode)
+[![MELPA Stable](https://stable.melpa.org/packages/basic-mode-badge.svg)](https://stable.melpa.org/#/basic-mode)
