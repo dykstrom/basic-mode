@@ -1,5 +1,14 @@
 # basic-mode
 
+<div style="text-align: left">
+
+[![MELPA](https://melpa.org/packages/basic-mode-badge.svg)](https://melpa.org/#/basic-mode)
+[![MELPA Stable](https://stable.melpa.org/packages/basic-mode-badge.svg)](https://stable.melpa.org/#/basic-mode)
+[![Open Issues](https://img.shields.io/github/issues/dykstrom/basic-mode)](https://github.com/dykstrom/basic-mode/issues)
+![License](https://img.shields.io/github/license/dykstrom/basic-mode)
+
+</div>
+
 Package basic-mode provides a major mode for editing BASIC code in GNU Emacs.
 Features include syntax highlighting and indentation, as well as support for
 auto-numbering and renumering of code lines.
@@ -107,6 +116,3 @@ in some way:
     <td>t</td>
   </tr>
 </table>
-
-[![MELPA](https://melpa.org/packages/basic-mode-badge.svg)](https://melpa.org/#/basic-mode)
-[![MELPA Stable](https://stable.melpa.org/packages/basic-mode-badge.svg)](https://stable.melpa.org/#/basic-mode)
