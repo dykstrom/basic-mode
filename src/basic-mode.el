@@ -69,7 +69,7 @@
 
 ;;; Change Log:
 
-;;  0.4.4  2022-08-22  Auto-numbering without line-number-cols.
+;;  0.4.4  2022-08-23  Auto-numbering without line-number-cols.
 ;;  0.4.3  2021-03-16  Improved indentation with tabs.
 ;;                     Thanks to Jeff Spaulding.
 ;;  0.4.2  2018-09-19  Lookup of dimmed variables.
@@ -502,7 +502,7 @@ even if that creates overlaps."
 		       (truncate (- next-line-number current-line-number) 2)))
 	  (when (= new-line-number current-line-number)
 	    (setq new-line-number (1+ new-line-number))))
-    (insert (int-to-string new-line-number))
+    (if new-line-number (insert (int-to-string new-line-number)))
     (basic-indent-line)))
 
 (defun basic-find-jumps ()
