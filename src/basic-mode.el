@@ -59,9 +59,11 @@
 ;; `basic-delete-trailing-whitespace' and `delete-trailing-lines'
 ;; (from simple.el).
 ;;
-;; You can also customize the number of columns to allocate for line
-;; numbers, see variable `basic-line-number-cols'.  The default value
-;; is 0, which means not using line numbers at all.
+;; You can also customize the number of columns to allocate for
+;; line numbers using the variable `basic-line-number-cols'. The
+;; default value of 0 (no space reserved), is appropriate for
+;; programs with no line numbers and for left aligned numbering.
+;; Use a positive integer, such as 6, if you prefer right alignment.
 ;;
 ;; The other line number features can be configured by customizing
 ;; the variables `basic-auto-number', `basic-renumber-increment' and
@@ -112,8 +114,12 @@ Statements inside a block are indented this number of columns."
 
 (defcustom basic-line-number-cols 0
   "*Specifies the number of columns to allocate to line numbers.
-This number should include the single space between the line number and
-the actual code.  Set this variable to 0 if you do not use line numbers."
+This number includes the single space between the line number and
+the actual code. Leave this variable at 0 if you do not use line
+numbers or if you prefer left aligned numbering. A positive value
+adds sufficient padding to right align a line number and add a
+space afterward. The value 6 is reasonable for older dialects of
+BASIC which used at most five digits for line numbers."
   :type 'integer
   :group 'basic)
 
@@ -689,12 +695,34 @@ If VARIABLE is not found, return nil."
 ;;;###autoload
 (define-derived-mode basic-mode prog-mode "Basic"
   "Major mode for editing BASIC code.
-Commands:
-TAB indents for BASIC code. RET will insert a new line starting
-with a fresh line number if line numbers are turned on.
 
-To turn on line numbers, customize variables `basic-auto-number'
-and `basic-line-number-cols'.
+Commands:
+
+\\[indent-for-tab-command] indents for BASIC code. 
+
+\\[newline] can automatically insert a fresh line number if
+`basic-auto-number' is set. (Default is disabled).
+
+Customization:
+
+You can customize the indentation of code blocks, see variable
+`basic-indent-offset'.  The default value is 4.
+
+Formatting is also affected by the customizable variables
+`basic-delete-trailing-whitespace' and `delete-trailing-lines'
+(from simple.el).
+
+You can also customize the number of columns to allocate for line
+numbers using the variable `basic-line-number-cols'. The default
+value of 0, no space reserved, is appropriate for programs with
+no line numbers and for left aligned numbering. Use a larger
+value if you prefer right aligned numbers. Note that the value
+includes the space after the line number, so 6 right aligns
+5-digit numbers.
+
+The other line number features can be configured by customizing
+the variables `basic-auto-number', `basic-renumber-increment' and
+`basic-renumber-unnumbered-lines'.
 
 \\{basic-mode-map}"
   :group 'basic
@@ -703,7 +731,9 @@ and `basic-line-number-cols'.
   (setq-local comment-start "'")
   (setq-local font-lock-defaults '(basic-font-lock-keywords nil t))
   (unless font-lock-mode
-    (font-lock-mode 1)))
+    (font-lock-mode 1))
+  (setq-local syntax-propertize-function
+              (syntax-propertize-rules ("\\(\\_<REM\\_>\\)" (1 "<")))))
 
 ;;;###autoload (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-mode))
 
