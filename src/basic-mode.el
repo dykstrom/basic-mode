@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.4.4
+;; Version: 0.4.5
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -71,6 +71,8 @@
 
 ;;; Change Log:
 
+;;  0.4.5  2022-09-10  Fix docs and REM syntax
+;;                     Thanks to hackerb9.
 ;;  0.4.4  2022-08-23  Auto-numbering without line-number-cols.
 ;;  0.4.3  2021-03-16  Improved indentation with tabs.
 ;;                     Thanks to Jeff Spaulding.
@@ -153,7 +155,7 @@ empty lines are never numbered."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.4.4"
+(defconst basic-mode-version "0.4.5"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -609,7 +611,7 @@ have numbers are included in the renumbering."
 (declare-function xref-make-buffer-location "xref" (buffer point))
 
 (defun basic-xref-backend ()
-  "Return the xref backend used by basic-mode."
+  "Return the xref backend used by `basic-mode'."
   'basic)
 
 (defun basic-xref-make-xref (summary buffer point)
@@ -698,7 +700,7 @@ If VARIABLE is not found, return nil."
 
 Commands:
 
-\\[indent-for-tab-command] indents for BASIC code. 
+\\[indent-for-tab-command] indents for BASIC code.
 
 \\[newline] can automatically insert a fresh line number if
 `basic-auto-number' is set. (Default is disabled).
@@ -710,7 +712,7 @@ You can customize the indentation of code blocks, see variable
 
 Formatting is also affected by the customizable variables
 `basic-delete-trailing-whitespace' and `delete-trailing-lines'
-(from simple.el).
+\(from simple.el).
 
 You can also customize the number of columns to allocate for line
 numbers using the variable `basic-line-number-cols'. The default
