@@ -203,14 +203,14 @@ beginning of a line or after a statement separator (:).")
 
 (defconst basic-function-regexp
   (regexp-opt '("abs" "asc" "atn" "cdbl" "cint" "chr$" "command$" "cos" "exp"
-                "fix" "instr" "int" "lcase$" "len" "left$" "log" "log10" "mid$"
-                "pi" "right$" "rnd" "sgn" "sin" "sqr" "str$" "tab" "tan"
-                "ucase$" "usr" "val")
+                "fix" "hex$" "instr" "int" "lcase$" "len" "left$" "log" "log10"
+                "ltrim$" "mid$" "pi" "oct$" "right$" "rnd" "rtrim$" "sgn" "sin"
+                "space$" "sqr" "str$" "tab" "tan" "timer" "ucase$" "usr" "val")
               'symbols)
   "Regexp string of symbols to highlight as functions.")
 
 (defconst basic-builtin-regexp
-  (regexp-opt '("and" "cls" "data" "input" "let" "mat" "mod" "not" "or"
+  (regexp-opt '("and" "cls" "data" "input" "let" "line" "mat" "mod" "not" "or"
                 "peek" "poke" "print" "read" "restore" "troff" "tron" "xor")
               'symbols)
   "Regexp string of symbols to highlight as builtins.")
@@ -218,8 +218,8 @@ beginning of a line or after a statement separator (:).")
 (defconst basic-keyword-regexp
   (regexp-opt '("as" "call" "def" "defbol" "defdbl" "defint" "defsng" "defstr"
                 "dim" "do" "else" "elseif" "end" "endif" "error" "exit" "fn"
-                "for" "gosub" "goto" "if" "loop" "next" "on" "step" "repeat"
-                "return" "sub" "then" "to" "until" "wend" "while")
+                "for" "gosub" "goto" "if" "loop" "next" "on" "step" "randomize"
+                "repeat" "return" "sub" "then" "to" "until" "wend" "while")
               'symbols)
   "Regexp string of symbols to highlight as keywords.")
 
