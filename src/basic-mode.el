@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.4.5
+;; Version: 0.4.6
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -71,7 +71,8 @@
 
 ;;; Change Log:
 
-;;  0.4.5  2022-09-10  Fix docs and REM syntax
+;;  0.4.6  2022-09-17  Auto-numbering handles digits after point.
+;;  0.4.5  2022-09-10  Fix docs and REM syntax.
 ;;                     Thanks to hackerb9.
 ;;  0.4.4  2022-08-23  Auto-numbering without line-number-cols.
 ;;  0.4.3  2021-03-16  Improved indentation with tabs.
@@ -155,7 +156,7 @@ empty lines are never numbered."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.4.5"
+(defconst basic-mode-version "0.4.6"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -510,7 +511,7 @@ even if that creates overlaps."
 		       (truncate (- next-line-number current-line-number) 2)))
 	  (when (= new-line-number current-line-number)
 	    (setq new-line-number (1+ new-line-number))))
-    (if new-line-number (insert (int-to-string new-line-number)))
+    (if new-line-number (insert (concat (int-to-string new-line-number) " ")))
     (basic-indent-line)))
 
 (defun basic-find-jumps ()
