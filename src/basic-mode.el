@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.4.6
+;; Version: 0.5.0
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -71,6 +71,7 @@
 
 ;;; Change Log:
 
+;;  0.5.0  2022-10-15  Breaking a comment creates a new comment line.
 ;;  0.4.6  2022-09-17  Auto-numbering handles digits after point.
 ;;  0.4.5  2022-09-10  Fix docs and REM syntax.
 ;;                     Thanks to hackerb9.
@@ -93,6 +94,7 @@
 
 ;;; Code:
 
+(require 'simple)
 (require 'seq)
 
 ;; ----------------------------------------------------------------------------
@@ -156,7 +158,7 @@ empty lines are never numbered."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.4.6"
+(defconst basic-mode-version "0.5.0"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -262,9 +264,9 @@ beginning of a line or after a statement separator (:).")
              (original-indent-col (basic-current-indent))
              (calculated-indent-col (basic-calculate-indent)))
         (basic-indent-line-to calculated-indent-col)
-	(move-to-column (+ calculated-indent-col
-			   (max (- original-col original-indent-col) 0)
-			   basic-line-number-cols))))))
+        (move-to-column (+ calculated-indent-col
+                           (max (- original-col original-indent-col) 0)
+                           basic-line-number-cols))))))
 
 (defun basic-calculate-indent ()
   "Calculate the indent for the current line of code.
@@ -292,6 +294,23 @@ Code inside a block is indented `basic-indent-offset' extra characters."
     (unless (listp faces)
       (setq faces (list faces)))
     (seq-some (lambda (x) (memq x faces)) basic-comment-and-string-faces)))
+
+(defun basic-comment-p ()
+  "Return non-nil if point is in a comment."
+  (let ((comment-or-string (car (basic-comment-or-string-p))))
+    (or (equal comment-or-string font-lock-comment-face)
+        (equal comment-or-string font-lock-comment-delimiter-face))))
+
+(defun basic-comment-lead ()
+  "Return the comment lead of the comment at point.
+If the point is not in a comment, return nil."
+  (when (basic-comment-p)
+    (save-excursion
+      (while (and (not (bolp)) (basic-comment-p))
+        (forward-char -1))
+      (let ((case-fold-search t))
+        (when (re-search-forward "'\\|rem" nil t)
+          (match-string 0))))))
 
 (defun basic-code-search-backward ()
   "Search backward from point for a line containing code."
@@ -480,6 +499,12 @@ trailing lines at the end of the buffer if the variable
       (let ((line-number (match-string-no-properties 1)))
         (string-to-number line-number)))))
 
+(defun basic-looking-at-line-number-p (line-number)
+  "Return non-nil if text after point matches LINE-NUMBER."
+  (and line-number
+       (looking-at (concat "[ \t]*" (int-to-string line-number)))
+       (looking-back "^[ \t]*" nil)))
+
 (defun basic-newline-and-number ()
   "Insert a newline and indent to the proper level.
 If the current line starts with a line number, and auto-numbering is
@@ -493,14 +518,17 @@ and use that as the next number.  If no more unused line numbers
 are available between the existing lines, just increment by one,
 even if that creates overlaps."
   (interactive)
-  (let* ((current-line-number (basic-current-line-number))
+  (let* ((current-column (current-column))
+         (current-line-number (basic-current-line-number))
+         (before-line-number (basic-looking-at-line-number-p current-line-number))
 	     (next-line-number (save-excursion
 			                 (end-of-line)
 			                 (and (forward-word 1)
 				                  (basic-current-line-number))))
 	     (new-line-number (and current-line-number
 			                   basic-auto-number
-			                   (+ current-line-number basic-auto-number))))
+			                   (+ current-line-number basic-auto-number)))
+         (comment-lead (basic-comment-lead)))
     (basic-indent-line)
     (newline)
     (when (and next-line-number
@@ -511,8 +539,17 @@ even if that creates overlaps."
 		       (truncate (- next-line-number current-line-number) 2)))
 	  (when (= new-line-number current-line-number)
 	    (setq new-line-number (1+ new-line-number))))
-    (if new-line-number (insert (concat (int-to-string new-line-number) " ")))
-    (basic-indent-line)))
+    (unless before-line-number
+      (if new-line-number
+          (insert (concat (int-to-string new-line-number) " ")))
+      (if (and comment-lead
+               (not (eolp))
+               (not (looking-at comment-lead)))
+          (insert (concat comment-lead " "))))
+    (basic-indent-line)
+    ;; If the point was before the line number we want it to stay there
+    (if before-line-number
+        (move-to-column current-column))))
 
 (defun basic-find-jumps ()
   "Find all jump targets and the jump statements that jump to them.
