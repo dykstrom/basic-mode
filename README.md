@@ -111,6 +111,14 @@ in some way:
     <td>t</td>
   </tr>
   <tr>
+    <td>basic-syntax-highlighting-require-separator</td>
+    <td>
+    If non-nil, only keywords separated by separators will be highlighted.
+    If nil, keywords separated by numbers will also be highlighted.
+    </td>
+    <td>t</td>
+  </tr>
+  <tr bgcolor="#EEEEFF">
     <td>delete-trailing-lines (simple.el)</td>
     <td>If non-nil, basic-format-code deletes trailing empty lines while formatting.</td>
     <td>t</td>

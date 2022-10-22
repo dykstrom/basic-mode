@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.5.0
+;; Version: 0.6.0
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -68,9 +68,13 @@
 ;; The other line number features can be configured by customizing
 ;; the variables `basic-auto-number', `basic-renumber-increment' and
 ;; `basic-renumber-unnumbered-lines'.
+;;
+;; Whether syntax highlighting requires separators between keywords can be
+;; customized with variable `basic-syntax-highlighting-require-separator'.
 
 ;;; Change Log:
 
+;;  0.6.0  2022-10-22  Syntax highlighting without separators.
 ;;  0.5.0  2022-10-15  Breaking a comment creates a new comment line.
 ;;  0.4.6  2022-09-17  Auto-numbering handles digits after point.
 ;;  0.4.5  2022-09-10  Fix docs and REM syntax.
@@ -128,7 +132,7 @@ BASIC which used at most five digits for line numbers."
   :type 'integer
   :group 'basic)
 
-(defcustom basic-delete-trailing-whitespace 't
+(defcustom basic-delete-trailing-whitespace t
   "*Delete trailing whitespace while formatting code."
   :type 'boolean
   :group 'basic)
@@ -154,11 +158,17 @@ empty lines are never numbered."
   :type 'boolean
   :group 'basic)
 
+(defcustom basic-syntax-highlighting-require-separator t
+  "*If non-nil, only keywords separated by separators will be highlighted.
+If nil, keywords separated by numbers will also be highlighted."
+  :type 'boolean
+  :group 'basic)
+
 ;; ----------------------------------------------------------------------------
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.5.0"
+(defconst basic-mode-version "0.6.0"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -220,8 +230,9 @@ beginning of a line or after a statement separator (:).")
 (defconst basic-keyword-regexp
   (regexp-opt '("as" "call" "def" "defbol" "defdbl" "defint" "defsng" "defstr"
                 "dim" "do" "else" "elseif" "end" "endif" "error" "exit" "fn"
-                "for" "gosub" "goto" "if" "loop" "next" "on" "step" "randomize"
-                "repeat" "return" "sub" "then" "to" "until" "wend" "while")
+                "for" "gosub" "go sub" "goto" "go to" "if" "loop" "next" "on"
+                "step" "randomize" "repeat" "return" "sub" "then" "to" "until"
+                "wend" "while")
               'symbols)
   "Regexp string of symbols to highlight as keywords.")
 
@@ -240,6 +251,10 @@ beginning of a line or after a statement separator (:).")
         (list basic-function-regexp 0 'font-lock-function-name-face)
         (list basic-builtin-regexp 0 'font-lock-builtin-face))
   "Describes how to syntax highlight keywords in `basic-mode' buffers.")
+
+(defconst basic-font-lock-syntax
+  '(("0123456789" . "."))
+  "Syntax alist used to set the Font Lock syntax table.")
 
 ;; ----------------------------------------------------------------------------
 ;; Indentation:
@@ -764,12 +779,18 @@ The other line number features can be configured by customizing
 the variables `basic-auto-number', `basic-renumber-increment' and
 `basic-renumber-unnumbered-lines'.
 
+Whether syntax highlighting requires separators between keywords
+can be customized with variable
+`basic-syntax-highlighting-require-separator'.
+
 \\{basic-mode-map}"
   :group 'basic
   (add-hook 'xref-backend-functions #'basic-xref-backend nil t)
   (setq-local indent-line-function 'basic-indent-line)
   (setq-local comment-start "'")
-  (setq-local font-lock-defaults '(basic-font-lock-keywords nil t))
+  (if basic-syntax-highlighting-require-separator
+      (setq-local font-lock-defaults (list basic-font-lock-keywords nil t))
+    (setq-local font-lock-defaults (list basic-font-lock-keywords nil t basic-font-lock-syntax)))
   (unless font-lock-mode
     (font-lock-mode 1))
   (setq-local syntax-propertize-function
