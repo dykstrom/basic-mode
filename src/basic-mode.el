@@ -725,6 +725,89 @@ If VARIABLE is not found, return nil."
       positions)))
 
 ;; ----------------------------------------------------------------------------
+;; Word boundaries (based on subword-mode):
+;; ----------------------------------------------------------------------------
+
+(defconst basic-find-word-boundary-function-table
+  (let ((tab (make-char-table nil)))
+    (set-char-table-range tab t #'basic-find-word-boundary)
+    tab)
+  "Assigned to `find-word-boundary-function-table' when
+`basic-syntax-highlighting-require-separator' is nil; defers to
+`basic-find-word-boundary'.")
+
+(defconst basic-empty-char-table
+  (make-char-table nil)
+  "Assigned to `find-word-boundary-function-table' when
+custom word boundry functionality is not active.")
+
+(defvar basic-forward-function 'basic-forward-internal
+  "Function to call for forward movement.")
+
+(defvar basic-backward-function 'basic-backward-internal
+  "Function to call for backward movement.")
+
+(defvar basic-alpha-regexp
+  "[[:alpha:]$_.]+"
+  "Regexp used by `basic-forward-internal' and `basic-backward-internal'.")
+
+(defvar basic-not-alpha-regexp
+  "[^[:alpha:]$_.]+"
+  "Regexp used by `basic-forward-internal' and `basic-backward-internal'.")
+
+(defvar basic-digit-regexp
+  "[[:digit:]]+"
+  "Regexp used by `basic-forward-internal' and `basic-backward-internal'.")
+
+(defvar basic-not-digit-regexp
+  "[^[:digit:]]+"
+  "Regexp used by `basic-forward-internal' and `basic-backward-internal'.")
+
+(defun basic-find-word-boundary (pos limit)
+  "Catch-all handler in `basic-find-word-boundary-function-table'."
+  (let ((find-word-boundary-function-table basic-empty-char-table))
+    (save-match-data
+      (save-excursion
+        (save-restriction
+          (goto-char pos)
+          (if (< pos limit)
+              (progn
+                (narrow-to-region (point-min) limit)
+                (funcall basic-forward-function))
+            (narrow-to-region limit (point-max))
+            (funcall basic-backward-function))
+          (point))))))
+
+(defun basic-forward-internal ()
+  "Default implementation of forward movement."
+  (if (and (looking-at basic-alpha-regexp)
+           (save-excursion
+             (re-search-forward basic-alpha-regexp nil t))
+           (> (match-end 0) (point)))
+      (goto-char (match-end 0))
+    (if (and (looking-at basic-digit-regexp)
+             (save-excursion
+               (re-search-forward basic-digit-regexp nil t))
+             (> (match-end 0) (point)))
+        (goto-char (match-end 0)))))
+
+
+(defun basic-backward-internal ()
+  "Default implementation of backward movement."
+  (if (and (looking-at basic-alpha-regexp)
+           (save-excursion
+             (re-search-backward basic-not-alpha-regexp nil t)
+             (re-search-forward basic-alpha-regexp nil t))
+           (< (match-beginning 0) (point)))
+      (goto-char (match-beginning 0))
+    (if (and (looking-at basic-digit-regexp)
+             (save-excursion
+               (re-search-backward basic-not-digit-regexp nil t)
+               (re-search-forward basic-digit-regexp nil t))
+             (< (match-beginning 0) (point)))
+        (goto-char (match-beginning 0)))))
+
+;; ----------------------------------------------------------------------------
 ;; BASIC mode:
 ;; ----------------------------------------------------------------------------
 
@@ -789,8 +872,11 @@ can be customized with variable
   (setq-local indent-line-function 'basic-indent-line)
   (setq-local comment-start "'")
   (if basic-syntax-highlighting-require-separator
-      (setq-local font-lock-defaults (list basic-font-lock-keywords nil t))
-    (setq-local font-lock-defaults (list basic-font-lock-keywords nil t basic-font-lock-syntax)))
+      (progn
+        (setq-local font-lock-defaults (list basic-font-lock-keywords nil t))
+        (setq-local find-word-boundary-function-table basic-empty-char-table))
+    (setq-local font-lock-defaults (list basic-font-lock-keywords nil t basic-font-lock-syntax))
+    (setq-local find-word-boundary-function-table basic-find-word-boundary-function-table))
   (unless font-lock-mode
     (font-lock-mode 1))
   (setq-local syntax-propertize-function
