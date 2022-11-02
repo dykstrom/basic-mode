@@ -1,4 +1,4 @@
-;;; basic-mode.el --- Major mode for editing BASIC code
+;;; basic-mode.el --- Major mode for editing BASIC code  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2017-2022 Johan Dykstrom
 
@@ -608,53 +608,52 @@ buffer if only the active region is renumbered.
 If `basic-renumber-unnumbered-lines' is non-nil, all non-empty
 lines will get numbers.  If it is nil, only lines that already
 have numbers are included in the renumbering."
-  (interactive (list (let ((default (save-excursion
-				      (goto-char (if (use-region-p)
-						     (region-beginning)
-						   (point-min)))
-				      (or (basic-current-line-number)
-					  basic-renumber-increment))))
-		       (string-to-number (read-string
-					  (format "Renumber, starting with (default %d): "
-						  default)
-					  nil nil
-					  (int-to-string default))))
-		     (string-to-number (read-string
-					(format "Increment (default %d): "
-						basic-renumber-increment)
-					nil nil
-					(int-to-string basic-renumber-increment)))))
+  (interactive
+   (list (let ((default (save-excursion
+                          (goto-char (if (use-region-p)
+                                         (region-beginning)
+                                       (point-min)))
+                          (or (basic-current-line-number)
+                              basic-renumber-increment))))
+           (string-to-number (read-string
+                              (format "Renumber, starting with (default %d): " default)
+                              nil nil
+                              (int-to-string default))))
+         (string-to-number (read-string
+                            (format "Increment (default %d): " basic-renumber-increment)
+                            nil nil
+                            (int-to-string basic-renumber-increment)))))
   (if (zerop basic-line-number-cols)
       (message "No room for numbers.  Please adjust `basic-line-number-cols'.")
     (let ((new-line-number start)
-	  (jump-list (basic-find-jumps))
-	  (point-start (if (use-region-p) (region-beginning) (point-min)))
-	  (point-end (if (use-region-p) (copy-marker (region-end)) (copy-marker (point-max)))))
+          (jump-list (basic-find-jumps))
+          (point-start (if (use-region-p) (region-beginning) (point-min)))
+          (point-end (if (use-region-p) (copy-marker (region-end)) (copy-marker (point-max)))))
       (save-excursion
-	(goto-char point-start)
-	(while (< (point) point-end)
-	  (unless (looking-at "^[ \t]*$")
-	    (let ((current-line-number (string-to-number (basic-remove-line-number))))
-	      (when (or basic-renumber-unnumbered-lines
-			(not (zerop current-line-number)))
-		(let ((jump-locations (gethash current-line-number jump-list)))
-		  (save-excursion
-		    (dolist (p jump-locations)
-		      (goto-char (marker-position p))
-		      (set-marker p nil)
-		      (backward-kill-word 1)
-		      (insert (int-to-string new-line-number)))))
-		(indent-line-to (basic-calculate-indent))
-		(beginning-of-line)
-		(insert (basic-format-line-number new-line-number))
-		(setq new-line-number (+ new-line-number increment)))))
-	  (forward-line 1)))
+        (goto-char point-start)
+        (while (< (point) point-end)
+          (unless (looking-at "^[ \t]*$")
+            (let ((current-line-number (string-to-number (basic-remove-line-number))))
+              (when (or basic-renumber-unnumbered-lines
+                        (not (zerop current-line-number)))
+                (let ((jump-locations (gethash current-line-number jump-list)))
+                  (save-excursion
+                    (dolist (p jump-locations)
+                      (goto-char (marker-position p))
+                      (set-marker p nil)
+                      (backward-kill-word 1)
+                      (insert (int-to-string new-line-number)))))
+                (indent-line-to (basic-calculate-indent))
+                (beginning-of-line)
+                (insert (basic-format-line-number new-line-number))
+                (setq new-line-number (+ new-line-number increment)))))
+          (forward-line 1)))
       (set-marker point-end nil)
-      (maphash (lambda (target sources)
-		 (dolist (m sources)
-		   (when (marker-position m)
-		     (set-marker m nil))))
-	       jump-list))))
+      (maphash (lambda (_target sources)
+                 (dolist (m sources)
+                   (when (marker-position m)
+                     (set-marker m nil))))
+               jump-list))))
 
 ;; ----------------------------------------------------------------------------
 ;; Xref backend:
@@ -816,7 +815,7 @@ custom word boundry functionality is not active.")
     (define-key map "\C-c\C-f" 'basic-format-code)
     (define-key map "\r" 'basic-newline-and-number)
     (define-key map "\C-c\C-r" 'basic-renumber)
-    (define-key map "\:" 'basic-electric-colon)
+    (define-key map ":" 'basic-electric-colon)
     map)
   "Keymap used in ‘basic-mode'.")
 
