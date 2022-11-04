@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.6.0
+;; Version: 0.6.1
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -74,6 +74,7 @@
 
 ;;; Change Log:
 
+;;  0.6.1  2022-11-05  Fix syntax highlighting next to operators.
 ;;  0.6.0  2022-10-22  Syntax highlighting without separators.
 ;;  0.5.0  2022-10-15  Breaking a comment creates a new comment line.
 ;;  0.4.6  2022-09-17  Auto-numbering handles digits after point.
@@ -168,7 +169,7 @@ If nil, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.6.0"
+(defconst basic-mode-version "0.6.1"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -821,11 +822,13 @@ custom word boundry functionality is not active.")
 
 (defvar basic-mode-syntax-table
   (let ((table (make-syntax-table)))
-    (modify-syntax-entry ?_   "w   " table)
-    (modify-syntax-entry ?\.  "w   " table)
-    (modify-syntax-entry ?'   "<   " table)
-    (modify-syntax-entry ?\n  ">   " table)
-    (modify-syntax-entry ?\^m ">   " table)
+    (modify-syntax-entry (cons ?* ?/) ".   " table)   ; Operators * + , - . /
+    (modify-syntax-entry (cons ?< ?>) ".   " table)   ; Operators < = >
+    (modify-syntax-entry ?_           "w   " table)   ; Underscore is valid in variable names in some BASIC dialects
+    (modify-syntax-entry ?.           "w   " table)   ; Period is valid in variable names in some BASIC dialects
+    (modify-syntax-entry ?'           "<   " table)   ; Comment starts with '
+    (modify-syntax-entry ?\n          ">   " table)   ; Comment ends with newline
+    (modify-syntax-entry ?\^m         ">   " table)   ;                or carriage return
     table)
   "Syntax table used while in ‘basic-mode'.")
 
