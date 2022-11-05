@@ -1,10 +1,10 @@
-;;; basic-mode.el --- Major mode for editing BASIC code
+;;; basic-mode.el --- Major mode for editing BASIC code  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2017-2022 Johan Dykstrom
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.6.0
+;; Version: 0.6.1
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -74,6 +74,7 @@
 
 ;;; Change Log:
 
+;;  0.6.1  2022-11-05  Fix syntax highlighting next to operators.
 ;;  0.6.0  2022-10-22  Syntax highlighting without separators.
 ;;  0.5.0  2022-10-15  Breaking a comment creates a new comment line.
 ;;  0.4.6  2022-09-17  Auto-numbering handles digits after point.
@@ -168,7 +169,7 @@ If nil, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.6.0"
+(defconst basic-mode-version "0.6.1"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -608,53 +609,52 @@ buffer if only the active region is renumbered.
 If `basic-renumber-unnumbered-lines' is non-nil, all non-empty
 lines will get numbers.  If it is nil, only lines that already
 have numbers are included in the renumbering."
-  (interactive (list (let ((default (save-excursion
-				      (goto-char (if (use-region-p)
-						     (region-beginning)
-						   (point-min)))
-				      (or (basic-current-line-number)
-					  basic-renumber-increment))))
-		       (string-to-number (read-string
-					  (format "Renumber, starting with (default %d): "
-						  default)
-					  nil nil
-					  (int-to-string default))))
-		     (string-to-number (read-string
-					(format "Increment (default %d): "
-						basic-renumber-increment)
-					nil nil
-					(int-to-string basic-renumber-increment)))))
+  (interactive
+   (list (let ((default (save-excursion
+                          (goto-char (if (use-region-p)
+                                         (region-beginning)
+                                       (point-min)))
+                          (or (basic-current-line-number)
+                              basic-renumber-increment))))
+           (string-to-number (read-string
+                              (format "Renumber, starting with (default %d): " default)
+                              nil nil
+                              (int-to-string default))))
+         (string-to-number (read-string
+                            (format "Increment (default %d): " basic-renumber-increment)
+                            nil nil
+                            (int-to-string basic-renumber-increment)))))
   (if (zerop basic-line-number-cols)
       (message "No room for numbers.  Please adjust `basic-line-number-cols'.")
     (let ((new-line-number start)
-	  (jump-list (basic-find-jumps))
-	  (point-start (if (use-region-p) (region-beginning) (point-min)))
-	  (point-end (if (use-region-p) (copy-marker (region-end)) (copy-marker (point-max)))))
+          (jump-list (basic-find-jumps))
+          (point-start (if (use-region-p) (region-beginning) (point-min)))
+          (point-end (if (use-region-p) (copy-marker (region-end)) (copy-marker (point-max)))))
       (save-excursion
-	(goto-char point-start)
-	(while (< (point) point-end)
-	  (unless (looking-at "^[ \t]*$")
-	    (let ((current-line-number (string-to-number (basic-remove-line-number))))
-	      (when (or basic-renumber-unnumbered-lines
-			(not (zerop current-line-number)))
-		(let ((jump-locations (gethash current-line-number jump-list)))
-		  (save-excursion
-		    (dolist (p jump-locations)
-		      (goto-char (marker-position p))
-		      (set-marker p nil)
-		      (backward-kill-word 1)
-		      (insert (int-to-string new-line-number)))))
-		(indent-line-to (basic-calculate-indent))
-		(beginning-of-line)
-		(insert (basic-format-line-number new-line-number))
-		(setq new-line-number (+ new-line-number increment)))))
-	  (forward-line 1)))
+        (goto-char point-start)
+        (while (< (point) point-end)
+          (unless (looking-at "^[ \t]*$")
+            (let ((current-line-number (string-to-number (basic-remove-line-number))))
+              (when (or basic-renumber-unnumbered-lines
+                        (not (zerop current-line-number)))
+                (let ((jump-locations (gethash current-line-number jump-list)))
+                  (save-excursion
+                    (dolist (p jump-locations)
+                      (goto-char (marker-position p))
+                      (set-marker p nil)
+                      (backward-kill-word 1)
+                      (insert (int-to-string new-line-number)))))
+                (indent-line-to (basic-calculate-indent))
+                (beginning-of-line)
+                (insert (basic-format-line-number new-line-number))
+                (setq new-line-number (+ new-line-number increment)))))
+          (forward-line 1)))
       (set-marker point-end nil)
-      (maphash (lambda (target sources)
-		 (dolist (m sources)
-		   (when (marker-position m)
-		     (set-marker m nil))))
-	       jump-list))))
+      (maphash (lambda (_target sources)
+                 (dolist (m sources)
+                   (when (marker-position m)
+                     (set-marker m nil))))
+               jump-list))))
 
 ;; ----------------------------------------------------------------------------
 ;; Xref backend:
@@ -816,17 +816,19 @@ custom word boundry functionality is not active.")
     (define-key map "\C-c\C-f" 'basic-format-code)
     (define-key map "\r" 'basic-newline-and-number)
     (define-key map "\C-c\C-r" 'basic-renumber)
-    (define-key map "\:" 'basic-electric-colon)
+    (define-key map ":" 'basic-electric-colon)
     map)
   "Keymap used in ‘basic-mode'.")
 
 (defvar basic-mode-syntax-table
   (let ((table (make-syntax-table)))
-    (modify-syntax-entry ?_   "w   " table)
-    (modify-syntax-entry ?\.  "w   " table)
-    (modify-syntax-entry ?'   "<   " table)
-    (modify-syntax-entry ?\n  ">   " table)
-    (modify-syntax-entry ?\^m ">   " table)
+    (modify-syntax-entry (cons ?* ?/) ".   " table)   ; Operators * + , - . /
+    (modify-syntax-entry (cons ?< ?>) ".   " table)   ; Operators < = >
+    (modify-syntax-entry ?_           "w   " table)   ; Underscore is valid in variable names in some BASIC dialects
+    (modify-syntax-entry ?.           "w   " table)   ; Period is valid in variable names in some BASIC dialects
+    (modify-syntax-entry ?'           "<   " table)   ; Comment starts with '
+    (modify-syntax-entry ?\n          ">   " table)   ; Comment ends with newline
+    (modify-syntax-entry ?\^m         ">   " table)   ;                or carriage return
     table)
   "Syntax table used while in ‘basic-mode'.")
 
