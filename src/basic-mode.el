@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.6.1
+;; Version: 0.6.2
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -74,6 +74,7 @@
 
 ;;; Change Log:
 
+;;  0.6.2  2022-11-12  Renumber and goto line number without separators.
 ;;  0.6.1  2022-11-05  Fix syntax highlighting next to operators.
 ;;  0.6.0  2022-10-22  Syntax highlighting without separators.
 ;;  0.5.0  2022-10-15  Breaking a comment creates a new comment line.
@@ -169,7 +170,7 @@ If nil, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.6.1"
+(defconst basic-mode-version "0.6.2"
   "The current version of `basic-mode'.")
 
 (defconst basic-increase-indent-keywords-bol
@@ -571,19 +572,19 @@ even if that creates overlaps."
   "Find all jump targets and the jump statements that jump to them.
 This returns a hash with line numbers for keys.  The value of each entry
 is a list containing markers to each jump point (the number following a
-GOTO, GOSUB,etc.) that jumps to this line number."
+GOTO, GOSUB, etc.) that jumps to this line number."
   (let ((jump-targets (make-hash-table)))
     (save-excursion
       (goto-char (point-min))
-      (while (re-search-forward "\\(go\\(sub\\|to\\)\\|then\\)[ \t]*" nil t)
-	(while (looking-at "\\([0-9]+\\)\\(,[ \t]*\\)?")
-	  (let* ((target-string (match-string-no-properties 1))
-		 (target (string-to-number target-string))
-		 (jmp-marker (copy-marker (+ (point) (length target-string)))))
-	    (unless (gethash target jump-targets)
-	      (puthash target nil jump-targets))
-	    (push jmp-marker (gethash target jump-targets))
-	    (forward-char (length (match-string 0)))))))
+      (while (re-search-forward "\\(go[ ]?\\(sub\\|to\\)\\|then\\|else\\)[ \t]*" nil t)
+        (while (looking-at "\\([0-9]+\\)\\(,[ \t]*\\)?")
+          (let* ((target-string (match-string-no-properties 1))
+                 (target (string-to-number target-string))
+                 (jmp-marker (copy-marker (+ (point) (length target-string)))))
+            (unless (gethash target jump-targets)
+              (puthash target nil jump-targets))
+            (push jmp-marker (gethash target jump-targets))
+            (forward-char (length (match-string 0)))))))
     jump-targets))
 
 (defun basic-renumber (start increment)
@@ -676,7 +677,13 @@ have numbers are included in the renumbering."
 
 (defun basic-xref-identifier-at-point ()
   "Return the relevant BASIC identifier at point."
-  (thing-at-point 'symbol t))
+  (if basic-syntax-highlighting-require-separator
+      (thing-at-point 'symbol t)
+    (let ((number (thing-at-point 'number t))
+          (symbol (thing-at-point 'symbol t)))
+      (if number
+          (number-to-string number)
+        symbol))))
 
 (cl-defmethod xref-backend-definitions ((_backend (eql basic)) identifier)
   (basic-xref-find-definitions identifier))
