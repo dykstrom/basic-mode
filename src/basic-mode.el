@@ -440,12 +440,22 @@ non-blank character after the line number."
   "Indent current line to COLUMN, also considering line numbers."
   ;; Remove line number
   (let* ((line-number (basic-remove-line-number))
-         (formatted-number (basic-format-line-number line-number)))
+         (formatted-number (basic-format-line-number line-number))
+	 (beg (point)))
     ;; Indent line
     (indent-line-to column)
     ;; Add line number again
+    (untabify beg (point))
     (beginning-of-line)
-    (insert formatted-number)))
+    ;; (setq beg (point))
+    (insert formatted-number)
+
+    ;; Note: re-tabifying doesn't make sense if after adding in the
+    ;; line number the indentation doesn't align with tabs.
+    ;;
+    ;;    (end-of-line)
+    ;;    (tabify beg (point))
+    ))
 
 (defun basic-electric-colon ()
   "Insert a colon and re-indent line."
