@@ -173,90 +173,83 @@ If nil, keywords separated by numbers will also be highlighted."
 (defconst basic-mode-version "0.6.2"
   "The current version of `basic-mode'.")
 
-(defconst basic-increase-indent-keywords-bol
-  (regexp-opt '("do" "for" "repeat" "sub" "while")
-              'symbols)
-  "Regexp string of keywords that increase indentation.
+(defvar-local basic-increase-indent-keywords-bol
+  '("do" "for" "repeat" "sub" "while")
+  "List of keywords that increase indentation.
 These keywords increase indentation when found at the
 beginning of a line.")
+(defvar-local basic-increase-indent-keywords-bol-regexp nil)
 
-(defconst basic-increase-indent-keywords-eol
-  (regexp-opt '("else" "then")
-              'symbols)
-  "Regexp string of keywords that increase indentation.
+(defvar-local basic-increase-indent-keywords-eol
+  '("else" "then")
+  "List of keywords that increase indentation.
 These keywords increase indentation when found at the
 end of a line.")
+(defvar-local basic-increase-indent-keywords-eol-regexp nil)
 
-(defconst basic-decrease-indent-keywords-bol
-  (regexp-opt '("else" "elseif" "endif" "end" "loop" "next" "until" "wend")
-              'symbols)
-  "Regexp string of keywords that decrease indentation.
+(defvar-local basic-decrease-indent-keywords-bol
+  '("else" "elseif" "endif" "end" "loop" "next" "until" "wend")
+  "List of keywords that decrease indentation.
 These keywords decrease indentation when found at the
 beginning of a line or after a statement separator (:).")
+(defvar-local basic-decrease-indent-keywords-bol-regexp nil)
 
-(defconst basic-comment-and-string-faces
+(defvar-local basic-comment-and-string-faces
   '(font-lock-comment-face font-lock-comment-delimiter-face font-lock-string-face)
   "List of font-lock faces used for comments and strings.")
 
-(defconst basic-comment-regexp
+(defvar-local basic-comment-regexp
   "\\_<rem\\_>.*\n"
   "Regexp string that matches a comment until the end of the line.")
 
-(defconst basic-linenum-regexp
+(defvar-local basic-linenum-regexp
   "^[ \t]*\\([0-9]+\\)"
   "Regexp string of symbols to highlight as line numbers.")
 
-(defconst basic-label-regexp
+(defvar-local basic-label-regexp
   "^[ \t]*\\([a-zA-Z][a-zA-Z0-9_.]*:\\)"
-  "Regexp string of symbols to highlight as line numbers.")
+  "Regexp string of symbols to highlight as labels.")
 
-(defconst basic-constant-regexp
-  (regexp-opt '("false" "true")
-              'symbols)
-  "Regexp string of symbols to highlight as constants.")
+(defvar-local basic-constants
+  nil
+  "List of symbols to highlight as constants.")
 
-(defconst basic-function-regexp
-  (regexp-opt '("abs" "asc" "atn" "cdbl" "cint" "chr$" "command$" "cos" "exp"
-                "fix" "hex$" "instr" "int" "lcase$" "len" "left$" "log" "log10"
-                "ltrim$" "mid$" "pi" "oct$" "right$" "rnd" "rtrim$" "sgn" "sin"
-                "space$" "sqr" "str$" "tab" "tan" "timer" "ucase$" "usr" "val")
-              'symbols)
-  "Regexp string of symbols to highlight as functions.")
+(defvar-local basic-functions
+  '("abs" "asc" "atn" "cdbl" "cint" "chr$" "command$" "cos" "exp"
+    "fix" "hex$" "instr" "int" "lcase$" "len" "left$" "log" "log10"
+    "ltrim$" "mid$" "pi" "oct$" "right$" "rnd" "rtrim$" "sgn" "sin"
+    "space$" "sqr" "str$" "tab" "tan" "timer" "ucase$" "usr" "val")
+  "List of symbols to highlight as functions.")
 
-(defconst basic-builtin-regexp
-  (regexp-opt '("and" "cls" "data" "input" "let" "line" "mat" "mod" "not" "or"
-                "peek" "poke" "print" "read" "restore" "troff" "tron" "xor")
-              'symbols)
-  "Regexp string of symbols to highlight as builtins.")
+(defvar-local basic-builtins
+  '("and" "beep" "cls" "data" "eqv" "imp" "input" "let" "line" "mat"
+    "mod" "not" "or" "peek" "poke" "print" "read" "restore" "troff"
+    "tron" "xor")
+  "List of symbols to highlight as builtins.")
 
-(defconst basic-keyword-regexp
-  (regexp-opt '("as" "call" "def" "defbol" "defdbl" "defint" "defsng" "defstr"
-                "dim" "do" "else" "elseif" "end" "endif" "error" "exit" "fn"
-                "for" "gosub" "go sub" "goto" "go to" "if" "loop" "next" "on"
-                "step" "randomize" "repeat" "return" "sub" "then" "to" "until"
-                "wend" "while")
-              'symbols)
-  "Regexp string of symbols to highlight as keywords.")
+(defvar-local basic-keywords
+  '("as" "call" "def" "defdbl" "defint" "deflng" "defsng" "defstr"
+    "dim" "do" "else" "elseif" "end" "endif" "error" "exit" "fn"
+    "for" "gosub" "go sub" "goto" "go to" "if" "loop" "next" "on"
+    "step" "randomize" "repeat" "return" "sub" "then" "to" "until"
+    "wend" "while")
+  "List of symbols to highlight as keywords.")
 
-(defconst basic-type-regexp
-  (regexp-opt '("boolean" "double" "integer" "single" "string")
-              'symbols)
-  "Regexp string of symbols to highlight as types.")
+(defvar-local basic-types
+  '("double" "integer" "long" "single" "string")
+  "List of symbols to highlight as types.")
 
-(defconst basic-font-lock-keywords
-  (list (list basic-comment-regexp 0 'font-lock-comment-face)
-        (list basic-linenum-regexp 0 'font-lock-constant-face)
-        (list basic-label-regexp 0 'font-lock-constant-face)
-        (list basic-constant-regexp 0 'font-lock-constant-face)
-        (list basic-keyword-regexp 0 'font-lock-keyword-face)
-        (list basic-type-regexp 0 'font-lock-type-face)
-        (list basic-function-regexp 0 'font-lock-function-name-face)
-        (list basic-builtin-regexp 0 'font-lock-builtin-face))
-  "Describes how to syntax highlight keywords in `basic-mode' buffers.")
+(defvar-local basic-font-lock-keywords
+  nil
+  "Describes how to syntax highlight keywords in `basic-mode' buffers.
+This is initialized by `basic-mode-initialize' from lists that may be
+modified in derived submodes.")
 
-(defconst basic-font-lock-syntax
+(defvar-local basic-font-lock-syntax
   '(("0123456789" . "."))
-  "Syntax alist used to set the Font Lock syntax table.")
+  "Syntax alist used to set the Font Lock syntax table.
+This syntax table is used to highlight keywords adjacent to numbers,
+e.g. GOTO10. See `basic-syntax-highlighting-require-separator'.")
 
 ;; ----------------------------------------------------------------------------
 ;; Indentation:
@@ -353,12 +346,12 @@ while other keywords do it when found at the beginning of a line."
     (basic-code-search-backward)
     (unless (bobp)
       ;; Keywords at the end of the line
-      (if (basic-match-symbol-at-point-p basic-increase-indent-keywords-eol)
+      (if (basic-match-symbol-at-point-p basic-increase-indent-keywords-eol-regexp)
           't
         ;; Keywords at the beginning of the line
         (beginning-of-line)
         (re-search-forward "[^0-9 \t\n]" (point-at-eol) t)
-        (basic-match-symbol-at-point-p basic-increase-indent-keywords-bol)))))
+        (basic-match-symbol-at-point-p basic-increase-indent-keywords-bol-regexp)))))
 
 (defun basic-decrease-indent-p ()
   "Return non-nil if indentation should be decreased.
@@ -367,13 +360,13 @@ of a line or statement, see `basic-decrease-indent-keywords-bol'."
   (save-excursion
     (beginning-of-line)
     (re-search-forward "[^0-9 \t\n]" (point-at-eol) t)
-    (or (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol)
+    (or (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol-regexp)
         (let ((match nil))
           (basic-code-search-backward)
           (beginning-of-line)
           (while (and (not match)
                       (re-search-forward ":[ \t\n]*" (point-at-eol) t))
-            (setq match (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol)))
+            (setq match (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol-regexp)))
           match))))
 
 (defun basic-current-indent ()
@@ -818,7 +811,7 @@ custom word boundry functionality is not active.")
 ;; BASIC mode:
 ;; ----------------------------------------------------------------------------
 
-(defvar basic-mode-map
+(defvar-local basic-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-c\C-f" 'basic-format-code)
     (define-key map "\r" 'basic-newline-and-number)
@@ -827,12 +820,10 @@ custom word boundry functionality is not active.")
     map)
   "Keymap used in ‘basic-mode'.")
 
-(defvar basic-mode-syntax-table
+(defvar-local basic-mode-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry (cons ?* ?/) ".   " table)   ; Operators * + , - . /
     (modify-syntax-entry (cons ?< ?>) ".   " table)   ; Operators < = >
-    (modify-syntax-entry ?_           "w   " table)   ; Underscore is valid in variable names in some BASIC dialects
-    (modify-syntax-entry ?.           "w   " table)   ; Period is valid in variable names in some BASIC dialects
     (modify-syntax-entry ?'           "<   " table)   ; Comment starts with '
     (modify-syntax-entry ?\n          ">   " table)   ; Comment ends with newline
     (modify-syntax-entry ?\^m         ">   " table)   ;                or carriage return
@@ -879,7 +870,41 @@ can be customized with variable
   :group 'basic
   (add-hook 'xref-backend-functions #'basic-xref-backend nil t)
   (setq-local indent-line-function 'basic-indent-line)
-  (setq-local comment-start "'")
+  (setq-local comment-start "REM")
+  (setq-local syntax-propertize-function
+              (syntax-propertize-rules ("\\(\\_<REM\\_>\\)" (1 "<"))))
+  (basic-mode-initialize))
+
+(defun basic-mode-initialize ()
+  "Initializations for sub-modes of `basic-mode'.
+This is called by `basic-mode' on startup and by its derived modes
+after making customizations to font-lock keywords and syntax tables."
+  (setq-local basic-increase-indent-keywords-bol-regexp
+	      (regexp-opt basic-increase-indent-keywords-bol 'symbols))
+  (setq-local basic-increase-indent-keywords-eol-regexp
+	      (regexp-opt basic-increase-indent-keywords-eol 'symbols))
+  (setq-local basic-decrease-indent-keywords-bol-regexp
+	      (regexp-opt basic-decrease-indent-keywords-bol 'symbols))
+
+  (message "Initializing `%s'..." major-mode)
+  (message "basic-functions = %s" basic-functions)
+  (message "basic-keywords = %s" basic-keywords)
+
+  (let ((basic-constant-regexp (regexp-opt basic-constants 'symbols))
+	    (basic-function-regexp (regexp-opt basic-functions 'symbols))
+	    (basic-builtin-regexp (regexp-opt basic-builtins 'symbols))
+	    (basic-keyword-regexp (regexp-opt basic-keywords 'symbols))
+	    (basic-type-regexp (regexp-opt basic-types 'symbols)))
+    (setq-local basic-font-lock-keywords
+	            (list (list basic-comment-regexp 0 'font-lock-comment-face)
+                      (list basic-linenum-regexp 0 'font-lock-constant-face)
+                      (list basic-label-regexp 0 'font-lock-constant-face)
+                      (list basic-constant-regexp 0 'font-lock-constant-face)
+                      (list basic-keyword-regexp 0 'font-lock-keyword-face)
+                      (list basic-type-regexp 0 'font-lock-type-face)
+                      (list basic-function-regexp 0 'font-lock-function-name-face)
+                      (list basic-builtin-regexp 0 'font-lock-builtin-face))))
+
   (if basic-syntax-highlighting-require-separator
       (progn
         (setq-local font-lock-defaults (list basic-font-lock-keywords nil t))
@@ -887,11 +912,141 @@ can be customized with variable
     (setq-local font-lock-defaults (list basic-font-lock-keywords nil t basic-font-lock-syntax))
     (setq-local find-word-boundary-function-table basic-find-word-boundary-function-table))
   (unless font-lock-mode
-    (font-lock-mode 1))
-  (setq-local syntax-propertize-function
-              (syntax-propertize-rules ("\\(\\_<REM\\_>\\)" (1 "<")))))
+    (font-lock-mode 1)))
 
 ;;;###autoload (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-mode))
+
+;; ----------------------------------------------------------------------------
+;; Derived modes:
+;; ----------------------------------------------------------------------------
+
+;;;###autoload
+(define-derived-mode basic-trs80-mode basic-mode "Basic[TRS-80]"
+  "Programming mode for BASIC for TRS-80 machines.
+This is currently incomplete as it only handles TRS-80 Model III.
+At a minimum, this is missing keywords used in the TRS-80 Model 100
+BASIC and TRS-80 Extended Color Computer BASIC.
+Derived from `basic-mode'."
+
+  (setq basic-functions
+	    '("abs" "asc" "atn" "cdbl" "cint" "chr$" "cos" "csng"
+		  "erl" "err" "exp" "fix" "fre" "inkey$" "inp" "int"
+		  "left$" "len" "log" "mem" "mid$" "point" "pos"
+		  "reset" "right$" "set" "sgn" "sin" "sqr" "str$"
+		  "string$" "tab" "tan" "time$" "usr" "val" "varptr"))
+
+  (setq basic-builtins
+	    '("?" "auto" "clear" "cload" "cload?" "cls"
+		  "data" "delete" "edit" "input" "input #" "let"
+		  "list" "llist" "lprint" "lprint tab" "lprint using"
+		  "new" "mod" "not" "or" "out" "peek" "poke"
+		  "print" "print tab" "print using"
+		  "read" "restore" "resume" "system" "troff" "tron"))
+
+  (setq basic-keywords
+	    '("as" "call" "defdbl" "defint" "defsng" "defstr"
+		  "dim" "do" "else" "end" "error" "for"
+		  "gosub" "go sub" "goto" "go to" "if" "next" "on"
+		  "step" "random" "return" "then" "to"))
+
+  ;; Treat ? and # as part of identifier ("cload?" and "input #")
+  (modify-syntax-entry ?? "w   " basic-mode-syntax-table)
+  (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
+
+  (basic-mode-initialize))
+
+;;;###autoload
+(define-derived-mode basic-m100-mode basic-trs80-mode "Basic[M100]"
+  "Programming mode for BASIC for the TRS-80 Model 100.
+It is a test of inheriting and modifying the TRS-80 mode.
+Derived from `basic-trs80-mode'."
+
+  (setq basic-functions
+        (seq-difference basic-functions
+	                    '("mem" "point" "set" "random" "reset" "usr")))
+  (setq basic-functions
+        (append basic-functions '("csrlin" "date$" "day$" "eof" "himem"
+	                              "instr" "input$" "maxfiles" "maxram"
+	                              "rnd" "space$" "time$")))
+
+  (setq basic-builtins
+        (seq-difference basic-builtins
+	                    '("auto" "delete" "system" "troff" "tron")))
+  (setq basic-builtins
+        (append basic-builtins '("beep" "cloadm" "close" "csave" "csavem"
+	                             "files" "ipl" "key" "kill" "lcopy" "line"
+	                             "load" "loadm" "menu" "merge" "motor"
+                                 "name" "open" "power" "preset" "print @"
+                                 "pset" "save" "savem" "screen" "sound")))
+
+  (setq basic-keywords
+        (append basic-keywords '("com" "mdm" "on com gosub" "on error goto"
+	                             "on key gosub" "on mdm gosub" "on time$"
+	                             "runm" "time")))
+
+  (basic-mode-initialize))
+
+;;;###autoload
+(define-derived-mode basic-zx81-mode basic-mode "Basic[ZX81]"
+  "Programming mode for BASIC for ZX81 machines.
+Derived from `basic-mode'."
+
+  (setq basic-functions
+        '("abs" "acs" "and" "asn" "at" "atn" "chr$" "code" "cos" "exp"
+          "inkey$" "int" "len" "ln" "not" "or" "peek" "pi" "rnd" "sgn"
+          "sin" "sqr" "str$" "tab" "tan" "usr" "val"))
+
+  (setq basic-keywords '("for" "gosub" "goto" "if" "next" "return"
+                         "step" "stop" "to"))
+
+  (setq basic-builtins '("clear" "cls" "copy" "dim" "fast" "input" "let"
+                         "list" "llist" "load" "lprint" "new" "pause"
+                         "plot" "poke" "print" "rand" "run" "save" "scroll"
+                         "slow" "unplot"))
+
+  (setq basic-types nil)
+
+  (setq basic-increase-indent-keywords-bol '("for"))
+  (setq basic-increase-indent-keywords-eol nil)
+  (setq basic-decrease-indent-keywords-bol '("next"))
+
+  (basic-mode-initialize))
+
+;;;###autoload
+(define-derived-mode basic-spectrum-mode basic-zx81-mode "Basic[ZX Spectrum]"
+  "Programming mode for BASIC for ZX Spectrum machines.
+Derived from `basic-zx81-mode'."
+
+  (setq basic-functions
+	    (append basic-functions '("attr" "bin" "in" "point" "screen$" "val$")))
+
+  (setq basic-keywords
+        (append basic-keywords '("def fn" "go sub" "go to")))
+
+  (setq basic-builtins
+        (append basic-builtins '("beep" "border" "bright" "cat" "cat #"
+                                 "circle" "close #" "data" "draw" "erase"
+                                 "flash" "format" "ink" "input #" "inverse"
+                                 "merge" "move" "open #" "out" "over"
+                                 "paper" "print #" "randomize" "read"
+                                 "restore" "verify")))
+  (setq basic-builtins
+        (seq-difference basic-builtins '("fast" "rand" "slow")))
+
+  ;; Treat # as part of identifier ("open #" etc)
+  (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
+
+  (basic-mode-initialize))
+
+;;;###autoload
+(define-derived-mode basic-qb45-mode basic-mode "Basic[QB 4.5]"
+  "Programming mode for QuickBasic 4.5.
+Derived from `basic-mode'."
+
+  ;; QuickBasic allows periods (.) in identifiers
+  (modify-syntax-entry ?. "w   " basic-mode-syntax-table)
+
+  (basic-mode-initialize))
 
 ;; ----------------------------------------------------------------------------
 
