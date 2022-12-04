@@ -161,8 +161,8 @@ empty lines are never numbered."
   :group 'basic)
 
 (defcustom basic-syntax-highlighting-require-separator t
-  "*If non-nil, only keywords separated by separators will be highlighted.
-If nil, keywords separated by numbers will also be highlighted."
+  "*If non-nil, only keywords separated by symbols will be highlighted.
+If nil, the default, keywords separated by numbers will also be highlighted."
   :type 'boolean
   :group 'basic)
 
@@ -887,8 +887,9 @@ after making customizations to font-lock keywords and syntax tables."
 	      (regexp-opt basic-decrease-indent-keywords-bol 'symbols))
 
   (message "Initializing `%s'..." major-mode)
-  (message "basic-functions = %s" basic-functions)
-  (message "basic-keywords = %s" basic-keywords)
+  (message "basic-functions = %s" (pp-to-string basic-functions))
+  (message "basic-builtins = %s" (pp-to-string basic-builtins))
+  (message "basic-keywords = %s" (pp-to-string basic-keywords))
 
   (let ((basic-constant-regexp (regexp-opt basic-constants 'symbols))
 	    (basic-function-regexp (regexp-opt basic-functions 'symbols))
@@ -922,33 +923,32 @@ after making customizations to font-lock keywords and syntax tables."
 
 ;;;###autoload
 (define-derived-mode basic-trs80-mode basic-mode "Basic[TRS-80]"
-  "Programming mode for BASIC for TRS-80 machines.
-This is currently incomplete as it only handles TRS-80 Model III.
-At a minimum, this is missing keywords used in the TRS-80 Model 100
-BASIC and TRS-80 Extended Color Computer BASIC.
+  "Programming mode for BASIC on the TRS-80 Model I and III.
+For the TRS-80 Model 100 BASIC and TRS-80 Color Computer BASIC,
+please see `basic-m100-mode` and `basic-coco-mode`.
 Derived from `basic-mode'."
 
   (setq basic-functions
 	    '("abs" "asc" "atn" "cdbl" "cint" "chr$" "cos" "csng"
-		  "erl" "err" "exp" "fix" "fre" "inkey$" "inp" "int"
-		  "left$" "len" "log" "mem" "mid$" "point" "pos"
-		  "reset" "right$" "set" "sgn" "sin" "sqr" "str$"
-		  "string$" "tab" "tan" "time$" "usr" "val" "varptr"))
+	      "erl" "err" "exp" "fix" "fre" "inkey$" "inp" "int"
+	      "left$" "len" "log" "mem" "mid$" "point" "pos"
+	      "reset" "right$" "set" "sgn" "sin" "sqr" "str$"
+	      "string$" "tab" "tan" "time$" "usr" "val" "varptr"))
 
   (setq basic-builtins
 	    '("?" "auto" "clear" "cload" "cload?" "cls"
-		  "data" "delete" "edit" "input" "input #" "let"
-		  "list" "llist" "lprint" "lprint tab" "lprint using"
-		  "new" "mod" "not" "or" "out" "peek" "poke"
-		  "print" "print tab" "print using"
-		  "read" "restore" "resume" "system" "troff" "tron"))
-
+	      "data" "delete" "edit" "input" "input #" "let"
+	      "list" "llist" "lprint" "lprint tab" "lprint using"
+	      "new" "mod" "not" "or" "out" "peek" "poke"
+	      "print" "print tab" "print using"
+	      "read" "restore" "resume" "system" "troff" "tron"))
+  
   (setq basic-keywords
 	    '("as" "call" "defdbl" "defint" "defsng" "defstr"
-		  "dim" "do" "else" "end" "error" "for"
-		  "gosub" "go sub" "goto" "go to" "if" "next" "on"
-		  "step" "random" "return" "then" "to"))
-
+	      "dim" "do" "else" "end" "error" "for"
+	      "gosub" "goto" "go to" "if" "next" "on"
+	      "step" "random" "return" "then" "to"))
+  
   ;; Treat ? and # as part of identifier ("cload?" and "input #")
   (modify-syntax-entry ?? "w   " basic-mode-syntax-table)
   (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
@@ -956,33 +956,67 @@ Derived from `basic-mode'."
   (basic-mode-initialize))
 
 ;;;###autoload
-(define-derived-mode basic-m100-mode basic-trs80-mode "Basic[M100]"
-  "Programming mode for BASIC for the TRS-80 Model 100.
-It is a test of inheriting and modifying the TRS-80 mode.
-Derived from `basic-trs80-mode'."
+(define-derived-mode basic-m100-mode basic-mode "Basic[M100]"
+  "Programming mode for BASIC for the TRS-80 Model 100 computer.
+Also works for the other Radio-Shack portable computers (the
+Tandy 200 and Tandy 102), the Kyocera Kyotronic-85, and the
+Olivetti M10. Additionally, although N82 BASIC is slightly
+different, the NEC family of portables (PC-8201, PC-8201A, and
+PC-8300) are also supported by this mode."
+
+  ;; To do:
+  ;;
+  ;; * M100 BASIC actually reserves any word that starts with DEF or
+  ;;   RAND. For example, DEFAULT=1 and RANDY=0 are syntax errors.
+  ;;   Unfortunately, since we are using regexp-opt, we don't have a
+  ;;   way to easily highlight such keywords. 
 
   (setq basic-functions
-        (seq-difference basic-functions
-	                    '("mem" "point" "set" "random" "reset" "usr")))
-  (setq basic-functions
-        (append basic-functions '("csrlin" "date$" "day$" "eof" "himem"
-	                              "instr" "input$" "maxfiles" "maxram"
-	                              "rnd" "space$" "time$")))
+	'("abs" "asc" "atn" "cdbl" "chr$" "cint" "cos" "csng" "csrlin"
+	  "date$" "day$" "eof" "erl" "err" "exp" "fix" "fre" "himem"
+	  "inkey$" "inp" "input$" "instr" "int" "left$" "len" "log"
+	  "maxfiles" "maxram" "mid$" "pos" "right$" "rnd" "sgn" "sin"
+	  "space$" "sqr" "str$" "string$" "tab" "tan" "time$" "val"
+	  "varptr"))
 
   (setq basic-builtins
-        (seq-difference basic-builtins
-	                    '("auto" "delete" "system" "troff" "tron")))
-  (setq basic-builtins
-        (append basic-builtins '("beep" "cloadm" "close" "csave" "csavem"
-	                             "files" "ipl" "key" "kill" "lcopy" "line"
-	                             "load" "loadm" "menu" "merge" "motor"
-                                 "name" "open" "power" "preset" "print @"
-                                 "pset" "save" "savem" "screen" "sound")))
+	'("?" "and" "beep" "clear" "cload" "cload?" "cloadm" "close"
+	  "cls" "cont" "csave" "csavem" "data" "dski$" "dsko$" "edit"
+	  "eqv" "files" "imp" "input" "input #" "ipl" "key" "kill"
+	  "lcopy" "let" "line" "list" "llist" "load" "loadm" "lprint"
+	  "lprint tab" "lprint using" "menu" "merge" "mod" "motor"
+	  "name" "new" "not" "open" "or" "out" "peek" "poke" "power"
+	  "preset" "print" "print @" "print tab" "print using" "pset"
+	  "read" "restore" "resume" "save" "savem" "screen" "sound"))
 
   (setq basic-keywords
-        (append basic-keywords '("com" "mdm" "on com gosub" "on error goto"
-	                             "on key gosub" "on mdm gosub" "on time$"
-	                             "runm" "time")))
+	'("as" "call" "com" "defdbl" "defint" "defsng" "defstr" "dim"
+	  "else" "end" "error" "for" "go to" "gosub" "goto" "if" "mdm"
+	  "next" "off" "on" "on com gosub" "on error goto"
+	  "on key gosub" "on mdm gosub" "on time$" "random" "return"
+	  "runm" "step" "then" "time" "to"))
+
+  ;; Disk/Video Interface adds  a few BASIC commands that actually
+  ;; already exist in the M100 ROM as reserved keywords.
+  ;; "LFILES", "DSKO$", "DSKI$", "LOC", "LOF"
+  (setq basic-functions
+	(append basic-functions '("loc" "lof")))
+  (setq basic-builtins
+	(append basic-builtins '("dski$" "dsko$" "lfiles")))
+
+  ;; N82 BASIC has slightly different keywords, gains some, loses some.
+  ;; Change: loadm -> BLOAD, call -> EXEC, print @ -> LOCATE,
+  ;; Gains: BLOAD?, CMD, COLOR, DSKF, FORMAT, LPOS
+  ;; Loses: csavem, day$, himem, ipl, lcopy, maxram, mdm
+  (setq basic-functions
+	(append basic-functions '("loc" "lpos")))
+  (setq basic-builtins
+	(append basic-builtins '("bload" "bload?" "bsave" "cmd" "color" 
+				 "dskf" "exec" "format" "locate")))
+
+  ;; Treat ? and # as part of identifier ("cload?" and "input #")
+  (modify-syntax-entry ?? "w   " basic-mode-syntax-table)
+  (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
 
   (basic-mode-initialize))
 
