@@ -971,10 +971,16 @@ PC-8300) are also supported by this mode."
   ;;   Unfortunately, since we are using regexp-opt, we don't have a
   ;;   way to easily highlight such keywords. 
 
+  ;; * M100 BASIC arithmetic and conditional ops maybe should not be
+  ;;   highlighted at all. They are too common. They are:
+  ;;   =, <, >, <=, >=, <>, 	+, -, *, /, 	\, ^
+  
+
+
   (setq basic-functions
 	'("abs" "asc" "atn" "cdbl" "chr$" "cint" "cos" "csng" "csrlin"
 	  "date$" "day$" "eof" "erl" "err" "exp" "fix" "fre" "himem"
-	  "inkey$" "inp" "input$" "instr" "int" "left$" "len" "log"
+	  "inkey$" "inp" "input$" "instr" "int" "left$" "len" "log" "lpos"
 	  "maxfiles" "maxram" "mid$" "pos" "right$" "rnd" "sgn" "sin"
 	  "space$" "sqr" "str$" "string$" "tab" "tan" "time$" "val"
 	  "varptr"))
@@ -987,29 +993,28 @@ PC-8300) are also supported by this mode."
 	  "lprint tab" "lprint using" "menu" "merge" "mod" "motor"
 	  "name" "new" "not" "open" "or" "out" "peek" "poke" "power"
 	  "preset" "print" "print @" "print tab" "print using" "pset"
-	  "read" "restore" "resume" "save" "savem" "screen" "sound"))
+	  "read" "restore" "resume" "save" "savem" "screen" "sound"
+	  "xor"))
 
   (setq basic-keywords
 	'("as" "call" "com" "defdbl" "defint" "defsng" "defstr" "dim"
 	  "else" "end" "error" "for" "go to" "gosub" "goto" "if" "mdm"
 	  "next" "off" "on" "on com gosub" "on error goto"
 	  "on key gosub" "on mdm gosub" "on time$" "random" "return"
-	  "runm" "step" "then" "time" "to"))
+	  "run" "runm" "step" "stop" "then" "time" "to"))
 
-  ;; Disk/Video Interface adds  a few BASIC commands that actually
-  ;; already exist in the M100 ROM as reserved keywords.
+  ;; Disk/Video Interface adds a few BASIC commands (that actually
+  ;; already exist in the M100 ROM as reserved keywords!)
   ;; "LFILES", "DSKO$", "DSKI$", "LOC", "LOF"
   (setq basic-functions
 	(append basic-functions '("loc" "lof")))
   (setq basic-builtins
-	(append basic-builtins '("dski$" "dsko$" "lfiles")))
+	(append basic-builtins '("dski$" "dsko$" "lfiles" "width")))
 
   ;; N82 BASIC has slightly different keywords, gains some, loses some.
-  ;; Change: loadm -> BLOAD, call -> EXEC, print @ -> LOCATE,
-  ;; Gains: BLOAD?, CMD, COLOR, DSKF, FORMAT, LPOS
+  ;; Change: loadm -> BLOAD, savem -> BSAVE, call -> EXEC, print @ -> LOCATE,
+  ;; Gains: BLOAD?, CMD, COLOR, DSKF, FORMAT
   ;; Loses: csavem, day$, himem, ipl, lcopy, maxram, mdm
-  (setq basic-functions
-	(append basic-functions '("loc" "lpos")))
   (setq basic-builtins
 	(append basic-builtins '("bload" "bload?" "bsave" "cmd" "color" 
 				 "dskf" "exec" "format" "locate")))
