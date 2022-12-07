@@ -964,18 +964,31 @@ Olivetti M10. Additionally, although N82 BASIC is slightly
 different, the NEC family of portables (PC-8201, PC-8201A, and
 PC-8300) are also supported by this mode."
 
-  ;; To do:
-  ;;
-  ;; * M100 BASIC actually reserves any word that starts with DEF or
-  ;;   RAND. For example, DEFAULT=1 and RANDY=0 are syntax errors.
-  ;;   Unfortunately, since we are using regexp-opt, we don't have a
-  ;;   way to easily highlight such keywords. 
+  ;; Notes:
 
-  ;; * M100 BASIC arithmetic and conditional ops maybe should not be
+  ;; * M100 BASIC arithmetic and conditional ops probably should not be
   ;;   highlighted at all. They are too common. They are:
   ;;   =, <, >, <=, >=, <>, 	+, -, *, /, 	\, ^
-  
 
+  ;; * M100 BASIC reserves DEF.* and RAND.*, although they appear to
+  ;;   be stubs which do nothing. (Perhaps to allow for future
+  ;;   extensions to implement "DEF FN" and "RANDOMIZE"?)
+
+  ;; * The 'FOR' in 'OPEN "FILE" FOR OUTPUT AS #1' is highlighted the
+  ;;   same as in FOR loop (a keyword). Should it be?
+
+  ;; * Since FOR is highlighted as a keyword and INPUT as a builtin,
+  ;;   it makes sense for now to make AS and NAME both keywords and
+  ;;   OUTPUT a builtin just so the syntax highlighting looks right.
+  ;;
+  ;;	 	10 FOR T=1 TO 1000
+  ;;		20 OPEN "FOO" FOR INPUT AS #1
+  ;;		30 OPEN "BAR" FOR OUTPUT AS #2
+  ;;		40 NAME "BAZ" AS "QUUX"
+  
+  ;; * TODO: strings with embedded spaces ("ON COM GOSUB") should use
+  ;;   '\s+' for any amount of white space, but regexp-opt doesn't
+  ;;   have a way to do that.
 
   (setq basic-functions
 	'("abs" "asc" "atn" "cdbl" "chr$" "cint" "cos" "csng" "csrlin"
@@ -991,39 +1004,61 @@ PC-8300) are also supported by this mode."
 	  "eqv" "files" "imp" "input" "input #" "ipl" "key" "kill"
 	  "lcopy" "let" "line" "list" "llist" "load" "loadm" "lprint"
 	  "lprint tab" "lprint using" "menu" "merge" "mod" "motor"
-	  "name" "new" "not" "open" "or" "out" "peek" "poke" "power"
-	  "preset" "print" "print @" "print tab" "print using" "pset"
-	  "read" "restore" "resume" "save" "savem" "screen" "sound"
+	  "name" "new" "not" "open" "or" "out" "output" "peek" "poke" 
+	  "power" "preset" "print" "print @" "print tab" "print using" 
+	  "pset" "read" "restore" "resume" "save" "savem" "screen" "sound"
 	  "xor"))
 
   (setq basic-keywords
 	'("as" "call" "com" "defdbl" "defint" "defsng" "defstr" "dim"
 	  "else" "end" "error" "for" "go to" "gosub" "goto" "if" "mdm"
-	  "next" "off" "on" "on com gosub" "on error goto"
-	  "on key gosub" "on mdm gosub" "on time$" "random" "return"
-	  "run" "runm" "step" "stop" "then" "time" "to"))
+	  "next" "off" "on" "on com gosub" "on error goto" "on key gosub"
+	  "on mdm gosub" "on time$" "random" "return" "run" "runm" 
+	  "sound off" "sound on" "step" "stop" "then" 
+	  "time$ on" "time$ off" "time$ stop" "to"))
 
-  ;; Disk/Video Interface adds a few BASIC commands (that actually
-  ;; already exist in the M100 ROM as reserved keywords!)
+  ;; The Model 100 Disk/Video Interface adds a few BASIC commands
+  ;; (that actually already exist in the M100 ROM as reserved keywords!)
   ;; "LFILES", "DSKO$", "DSKI$", "LOC", "LOF"
   (setq basic-functions
 	(append basic-functions '("loc" "lof")))
   (setq basic-builtins
 	(append basic-builtins '("dski$" "dsko$" "lfiles" "width")))
 
-  ;; N82 BASIC has slightly different keywords, gains some, loses some.
-  ;; Change: loadm -> BLOAD, savem -> BSAVE, call -> EXEC, print @ -> LOCATE,
-  ;; Gains: BLOAD?, CMD, COLOR, DSKF, FORMAT
-  ;; Loses: csavem, day$, himem, ipl, lcopy, maxram, mdm
+  ;; NEC's N82 BASIC has slightly different keywords, gains some, loses some.
+  ;; Change: loadm -> BLOAD, savem -> BSAVE, call -> EXEC, print @ -> LOCATE.
+  ;; Gains: BLOAD?
+
+  ;; Adds stubs for: CMD, COLOR, DSKF, FORMAT, STATUS, MAX
+  ;; Loses: csavem, day$, def, himem, ipl, lcopy, maxram, mdm
   (setq basic-builtins
-	(append basic-builtins '("bload" "bload?" "bsave" "cmd" "color" 
-				 "dskf" "exec" "format" "locate")))
+	(append basic-builtins '("bload" "bload?" "bsave" "cmd" "color" "dskf"
+				 "exec" "format" "locate" "status" "max")))
+
+  ;; NEC PC-8241A CRT adapter for the 8201A has an extended "CRT-BASIC".
+  (setq basic-builtins
+	(append basic-builtins '("cmd circle" "cmd paint" "color")))
+  (setq basic-functions
+	(append basic-functions '("status point")))
 
   ;; Treat ? and # as part of identifier ("cload?" and "input #")
   (modify-syntax-entry ?? "w   " basic-mode-syntax-table)
   (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
 
+
+  ;; Adapt to coding for a 40 column screen
+  (setq-local comment-start "'" 	; Shorter than "REM"
+	      comment-column 16
+	      fill-column 36
+	      display-fill-column-indicator-column 40)
+
+  ;; Show an indicator of the Model 100's line width, if possible.
+  (condition-case nil
+      (display-fill-column-indicator-mode 1)
+    (error nil))
+
   (basic-mode-initialize))
+
 
 ;;;###autoload
 (define-derived-mode basic-zx81-mode basic-mode "Basic[ZX81]"
