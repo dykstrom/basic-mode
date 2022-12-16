@@ -24,3 +24,30 @@ LOOP UNTIL Company$ = ""
 ' Close Price.Dat (this ends output to the file):
 CLOSE #1
 END
+
+' --------------
+
+' Program demonstrates various forms of CASE items
+INPUT "Enter acceptable level of risk (1-10): ", Total
+SELECT CASE Total
+
+CASE IS >= 10
+    PRINT "Maximum risk and potential return"
+    PRINT "Choose stock investment plan"
+
+CASE  6 TO 9
+    PRINT "High risk and potential return"
+    PRINT "Choose corporate bonds"
+
+CASE  2 TO 5
+    PRINT "Moderate risk and return"
+    PRINT "Choose mutual fund"
+
+CASE 1
+    PRINT "No risk, low return"
+    PRINT "Choose IRA"
+
+CASE ELSE
+    PRINT "RESPONSE OUT OF RANGE"
+
+END SELECT

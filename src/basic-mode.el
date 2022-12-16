@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 0.6.2
+;; Version: 1.0.0
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -74,6 +74,8 @@
 
 ;;; Change Log:
 
+;;  1.0.0  2022-??-??  Add support for BASIC dialects using derived modes.
+;;                     Thanks to hackerb9.
 ;;  0.6.2  2022-11-12  Renumber and goto line number without separators.
 ;;  0.6.1  2022-11-05  Fix syntax highlighting next to operators.
 ;;  0.6.0  2022-10-22  Syntax highlighting without separators.
@@ -170,11 +172,11 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "0.6.2"
+(defconst basic-mode-version "1.0.0"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
-  '("do" "for" "repeat" "sub" "while")
+  '("for")
   "List of keywords that increase indentation.
 These keywords increase indentation when found at the
 beginning of a line.")
@@ -188,7 +190,7 @@ end of a line.")
 (defvar-local basic-increase-indent-keywords-eol-regexp nil)
 
 (defvar-local basic-decrease-indent-keywords-bol
-  '("else" "elseif" "endif" "end" "loop" "next" "until" "wend")
+  '("else" "end" "next")
   "List of keywords that decrease indentation.
 These keywords decrease indentation when found at the
 beginning of a line or after a statement separator (:).")
@@ -215,28 +217,23 @@ beginning of a line or after a statement separator (:).")
   "List of symbols to highlight as constants.")
 
 (defvar-local basic-functions
-  '("abs" "asc" "atn" "cdbl" "cint" "chr$" "command$" "cos" "exp"
-    "fix" "hex$" "instr" "int" "lcase$" "len" "left$" "log" "log10"
-    "ltrim$" "mid$" "pi" "oct$" "right$" "rnd" "rtrim$" "sgn" "sin"
-    "space$" "sqr" "str$" "tab" "tan" "timer" "ucase$" "usr" "val")
+  '("abs" "asc" "atn" "chr$" "cos" "exp" "int" "len" "log"
+    "pi" "rnd" "sgn" "sin" "sqr" "str$" "tab" "tan" "val")
   "List of symbols to highlight as functions.")
 
 (defvar-local basic-builtins
-  '("and" "beep" "cls" "data" "eqv" "imp" "input" "let" "line" "mat"
-    "mod" "not" "or" "peek" "poke" "print" "read" "restore" "troff"
-    "tron" "xor")
+  '("and" "cls" "data" "input" "let" "mod" "not" "or"
+    "peek" "poke" "print" "read" "restore" "xor")
   "List of symbols to highlight as builtins.")
 
 (defvar-local basic-keywords
-  '("as" "call" "def" "defdbl" "defint" "deflng" "defsng" "defstr"
-    "dim" "do" "else" "elseif" "end" "endif" "error" "exit" "fn"
-    "for" "gosub" "go sub" "goto" "go to" "if" "loop" "next" "on"
-    "step" "randomize" "repeat" "return" "sub" "then" "to" "until"
-    "wend" "while")
+  '("def fn" "dim" "else" "end" "error" "exit"
+    "for" "gosub" "go sub" "goto" "go to" "if" "next"
+    "on" "step" "randomize" "return" "then" "to")
   "List of symbols to highlight as keywords.")
 
 (defvar-local basic-types
-  '("double" "integer" "long" "single" "string")
+  nil
   "List of symbols to highlight as types.")
 
 (defvar-local basic-font-lock-keywords
@@ -915,11 +912,18 @@ after making customizations to font-lock keywords and syntax tables."
   (unless font-lock-mode
     (font-lock-mode 1)))
 
-;;;###autoload (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-mode))
-
 ;; ----------------------------------------------------------------------------
 ;; Derived modes:
 ;; ----------------------------------------------------------------------------
+
+;;;###autoload (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-generic-mode))
+
+;;;###autoload
+(define-derived-mode basic-generic-mode basic-qb45-mode "Basic[Generic]"
+  "Generic BASIC programming mode.
+This is the default mode that will be used if no sub mode is specified.
+Derived from `basic-qb45-mode'."
+  (basic-mode-initialize))
 
 ;;;###autoload
 (define-derived-mode basic-trs80-mode basic-mode "Basic[TRS-80]"
@@ -942,13 +946,13 @@ Derived from `basic-mode'."
 	      "new" "mod" "not" "or" "out" "peek" "poke"
 	      "print" "print tab" "print using"
 	      "read" "restore" "resume" "system" "troff" "tron"))
-  
+
   (setq basic-keywords
 	    '("as" "call" "defdbl" "defint" "defsng" "defstr"
 	      "dim" "do" "else" "end" "error" "for"
 	      "gosub" "goto" "go to" "if" "next" "on"
 	      "step" "random" "return" "then" "to"))
-  
+
   ;; Treat ? and # as part of identifier ("cload?" and "input #")
   (modify-syntax-entry ?? "w   " basic-mode-syntax-table)
   (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
@@ -985,7 +989,7 @@ PC-8300) are also supported by this mode."
   ;;		20 OPEN "FOO" FOR INPUT AS #1
   ;;		30 OPEN "BAR" FOR OUTPUT AS #2
   ;;		40 NAME "BAZ" AS "QUUX"
-  
+
   ;; * TODO: strings with embedded spaces ("ON COM GOSUB") should use
   ;;   '\s+' for any amount of white space, but regexp-opt doesn't
   ;;   have a way to do that.
@@ -1004,8 +1008,8 @@ PC-8300) are also supported by this mode."
 	  "eqv" "files" "imp" "input" "input #" "ipl" "key" "kill"
 	  "lcopy" "let" "line" "list" "llist" "load" "loadm" "lprint"
 	  "lprint tab" "lprint using" "menu" "merge" "mod" "motor"
-	  "name" "new" "not" "open" "or" "out" "output" "peek" "poke" 
-	  "power" "preset" "print" "print @" "print tab" "print using" 
+	  "name" "new" "not" "open" "or" "out" "output" "peek" "poke"
+	  "power" "preset" "print" "print @" "print tab" "print using"
 	  "pset" "read" "restore" "resume" "save" "savem" "screen" "sound"
 	  "xor"))
 
@@ -1013,8 +1017,8 @@ PC-8300) are also supported by this mode."
 	'("as" "call" "com" "defdbl" "defint" "defsng" "defstr" "dim"
 	  "else" "end" "error" "for" "go to" "gosub" "goto" "if" "mdm"
 	  "next" "off" "on" "on com gosub" "on error goto" "on key gosub"
-	  "on mdm gosub" "on time$" "random" "return" "run" "runm" 
-	  "sound off" "sound on" "step" "stop" "then" 
+	  "on mdm gosub" "on time$" "random" "return" "run" "runm"
+	  "sound off" "sound on" "step" "stop" "then"
 	  "time$ on" "time$ off" "time$ stop" "to"))
 
   ;; The Model 100 Disk/Video Interface adds a few BASIC commands
@@ -1070,13 +1074,13 @@ Derived from `basic-mode'."
           "inkey$" "int" "len" "ln" "not" "or" "peek" "pi" "rnd" "sgn"
           "sin" "sqr" "str$" "tab" "tan" "usr" "val"))
 
-  (setq basic-keywords '("for" "gosub" "goto" "if" "next" "return"
-                         "step" "stop" "to"))
-
-  (setq basic-builtins '("clear" "cls" "copy" "dim" "fast" "input" "let"
+  (setq basic-builtins '("clear" "cls" "copy" "fast" "input" "let"
                          "list" "llist" "load" "lprint" "new" "pause"
-                         "plot" "poke" "print" "rand" "run" "save" "scroll"
-                         "slow" "unplot"))
+                         "plot" "poke" "print" "rand" "run" "save"
+                         "scroll" "slow" "unplot"))
+
+  (setq basic-keywords '("dim" "for" "gosub" "goto" "if" "next" "return"
+                         "step" "stop" "to"))
 
   (setq basic-types nil)
 
@@ -1094,9 +1098,6 @@ Derived from `basic-zx81-mode'."
   (setq basic-functions
 	    (append basic-functions '("attr" "bin" "in" "point" "screen$" "val$")))
 
-  (setq basic-keywords
-        (append basic-keywords '("def fn" "go sub" "go to")))
-
   (setq basic-builtins
         (append basic-builtins '("beep" "border" "bright" "cat" "cat #"
                                  "circle" "close #" "data" "draw" "erase"
@@ -1107,6 +1108,9 @@ Derived from `basic-zx81-mode'."
   (setq basic-builtins
         (seq-difference basic-builtins '("fast" "rand" "slow")))
 
+  (setq basic-keywords
+        (append basic-keywords '("def fn" "go sub" "go to")))
+
   ;; Treat # as part of identifier ("open #" etc)
   (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
 
@@ -1114,11 +1118,75 @@ Derived from `basic-zx81-mode'."
 
 ;;;###autoload
 (define-derived-mode basic-qb45-mode basic-mode "Basic[QB 4.5]"
-  "Programming mode for QuickBasic 4.5.
+  "Programming mode for Microsoft QuickBasic 4.5.
 Derived from `basic-mode'."
 
-  ;; QuickBasic allows periods (.) in identifiers
+  ;; Notes:
+
+  ;; * DATE$, MID$, PEN, PLAY, SCREEN, SEEK, STRIG, TIMER, and TIME$
+  ;;   are both functions and statements, and are only highlighted as
+  ;;   one or the other.
+
+  ;; * $DYNAMIC, $INCLUDE, and $STATIC meta commands are not highlighted
+  ;;   because they must appear in a comment.
+
+  ;; * LOCAL, and SIGNAL are reserved for future use.
+
+  ;; * The 'FOR' in 'OPEN "FILE" FOR OUTPUT AS #1' is highlighted the
+  ;;   same as in FOR loop (a keyword). Should it be?
+  
+  (setq basic-functions
+        '("abs" "and" "asc" "atn" "cdbl" "chr$" "cint" "clng" "command$"
+          "cos" "csng" "csrlin" "cvd" "cvdmbf" "cvi" "cvl" "cvs" "cvsmbf"
+          "date$" "environ$" "eof" "eqv" "erdev" "erdev$" "erl" "err"
+          "exp" "fileattr" "fix" "fre" "freefile" "hex$" "imp" "inkey$"
+          "inp" "input$" "instr" "int" "ioctl$" "lbound" "lcase$" "left$"
+          "len" "loc" "lof" "log" "lpos" "ltrim$" "mid$" "mkd$" "mkdmbf$"
+          "mki$" "mkl$" "mks$" "mksmbf$" "mod" "not" "oct$" "or" "pmap"
+          "point" "pos" "right$" "rnd" "rtrim$" "sadd" "setmem" "sgn"
+          "sin" "space$" "spc" "sqr" "stick" "str$" "string$" "tab" "tan"
+          "time$" "ubound" "ucase$" "val" "varptr" "varptr$" "varseg"
+          "xor"))
+  
+  (setq basic-builtins
+        '("absolute" "access" "alias" "append" "beep" "binary" "bload"
+          "bsave" "byval" "cdecl" "chdir" "circle" "clear" "close"
+          "cls" "color" "com" "const" "data" "draw" "environ" "erase"
+          "error" "field" "files" "get" "input" "input #" "ioctl"
+          "interrupt" "key" "kill" "let" "line" "list" "locate" "lock"
+          "lprint" "lset" "mkdir" "name" "open" "out" "output" "paint"
+          "palette" "pcopy" "peek" "pen" "play" "poke" "preset" "print"
+          "print #" "pset" "put" "random" "randomize" "read" "reset"
+          "restore" "rmdir" "rset" "run" "screen" "seek" "shared" "sound"
+          "static" "strig" "swap" "timer" "uevent" "unlock" "using" "view"
+          "wait" "width" "window" "write" "write #"))
+
+  (setq basic-keywords
+        '("as" "call" "calls" "case" "chain" "common" "declare" "def"
+          "def seg" "defdbl" "defint" "deflng" "defsng" "defstr" "dim"
+          "do" "else" "elseif" "end" "endif" "exit" "for" "fn" "function"
+          "gosub" "goto" "if" "is" "loop" "next" "off" "on" "on com"
+          "on error" "on key" "on pen" "on play" "on strig" "on timer"
+          "on uevent" "option base" "redim" "resume" "return" "select"
+          "shell" "sleep" "step" "stop" "sub" "system" "then" "to"
+          "type" "until" "wend" "while"))
+
+  (setq basic-types
+        '("any" "double" "integer" "long" "single" "string"))
+
+  (setq basic-increase-indent-keywords-bol
+        '("case" "do" "for" "function" "repeat" "sub" "select" "while"))
+  (setq basic-increase-indent-keywords-eol
+        '("else" "then"))
+  (setq basic-decrease-indent-keywords-bol
+        '("case" "else" "elseif" "end" "loop" "next" "until" "wend"))
+
+  ;; Shorter than "REM"
+  (setq-local comment-start "'")
+  
+  ;; Treat . and # as part of identifier ("input #" etc)
   (modify-syntax-entry ?. "w   " basic-mode-syntax-table)
+  (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
 
   (basic-mode-initialize))
 
