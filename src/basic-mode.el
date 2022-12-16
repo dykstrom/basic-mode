@@ -28,6 +28,16 @@
 ;; include syntax highlighting and indentation, as well as support for
 ;; auto-numbering and renumering of code lines.
 ;;
+;; The base mode provides basic functionality and is normally only used
+;; to derive sub modes for different BASIC dialects, see for example
+;; `basic-generic-mode'.  For a list of available sub modes, please see
+;; https://github.com/dykstrom/basic-mode, or the end of the source code
+;; file.
+;;
+;; By default, basic-mode will open BASIC files in the generic sub mode.
+;; To change this, you can use a file variable, or associate BASIC files
+;; with another sub mode in `auto-mode-alist'.
+;;
 ;; You can format the region, or the entire buffer, by typing C-c C-f.
 ;;
 ;; When line numbers are turned on, hitting the return key will insert
@@ -47,8 +57,8 @@
 ;; To install manually, place basic-mode.el in your load-path, and add
 ;; the following lines of code to your init file:
 ;;
-;; (autoload 'basic-mode "basic-mode" "Major mode for editing BASIC code." t)
-;; (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-mode))
+;; (autoload 'basic-generic-mode "basic-mode" "Major mode for editing BASIC code." t)
+;; (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-generic-mode))
 
 ;; Configuration:
 
@@ -74,7 +84,7 @@
 
 ;;; Change Log:
 
-;;  1.0.0  2022-??-??  Add support for BASIC dialects using derived modes.
+;;  1.0.0  2022-12-17  Add support for BASIC dialects using derived modes.
 ;;                     Thanks to hackerb9.
 ;;  0.6.2  2022-11-12  Renumber and goto line number without separators.
 ;;  0.6.1  2022-11-05  Fix syntax highlighting next to operators.
@@ -761,7 +771,9 @@ custom word boundry functionality is not active.")
   "Regexp used by `basic-forward-internal' and `basic-backward-internal'.")
 
 (defun basic-find-word-boundary (pos limit)
-  "Catch-all handler in `basic-find-word-boundary-function-table'."
+  "Catch-all handler in `basic-find-word-boundary-function-table'.
+POS is the buffer position where to start the search.
+LIMIT is used to limit the search."
   (let ((find-word-boundary-function-table basic-empty-char-table))
     (save-match-data
       (save-excursion
@@ -831,12 +843,16 @@ custom word boundry functionality is not active.")
 (define-derived-mode basic-mode prog-mode "Basic"
   "Major mode for editing BASIC code.
 
+The base mode provides basic functionality and is normally
+only used to derive sub modes for different BASIC dialects,
+see for example `basic-generic-mode'.
+
 Commands:
 
 \\[indent-for-tab-command] indents for BASIC code.
 
 \\[newline] can automatically insert a fresh line number if
-`basic-auto-number' is set. (Default is disabled).
+`basic-auto-number' is set.  Default is disabled.
 
 Customization:
 
@@ -883,11 +899,6 @@ after making customizations to font-lock keywords and syntax tables."
   (setq-local basic-decrease-indent-keywords-bol-regexp
 	      (regexp-opt basic-decrease-indent-keywords-bol 'symbols))
 
-  (message "Initializing `%s'..." major-mode)
-  (message "basic-functions = %s" (pp-to-string basic-functions))
-  (message "basic-builtins = %s" (pp-to-string basic-builtins))
-  (message "basic-keywords = %s" (pp-to-string basic-keywords))
-
   (let ((basic-constant-regexp (regexp-opt basic-constants 'symbols))
 	    (basic-function-regexp (regexp-opt basic-functions 'symbols))
 	    (basic-builtin-regexp (regexp-opt basic-builtins 'symbols))
@@ -922,7 +933,7 @@ after making customizations to font-lock keywords and syntax tables."
 (define-derived-mode basic-generic-mode basic-qb45-mode "Basic[Generic]"
   "Generic BASIC programming mode.
 This is the default mode that will be used if no sub mode is specified.
-Derived from `basic-qb45-mode'."
+Derived from `basic-qb45-mode'.  For more information, see `basic-mode'."
   (basic-mode-initialize))
 
 ;;;###autoload
@@ -1134,7 +1145,7 @@ Derived from `basic-mode'."
 
   ;; * The 'FOR' in 'OPEN "FILE" FOR OUTPUT AS #1' is highlighted the
   ;;   same as in FOR loop (a keyword). Should it be?
-  
+
   (setq basic-functions
         '("abs" "and" "asc" "atn" "cdbl" "chr$" "cint" "clng" "command$"
           "cos" "csng" "csrlin" "cvd" "cvdmbf" "cvi" "cvl" "cvs" "cvsmbf"
@@ -1147,7 +1158,7 @@ Derived from `basic-mode'."
           "sin" "space$" "spc" "sqr" "stick" "str$" "string$" "tab" "tan"
           "time$" "ubound" "ucase$" "val" "varptr" "varptr$" "varseg"
           "xor"))
-  
+
   (setq basic-builtins
         '("absolute" "access" "alias" "append" "beep" "binary" "bload"
           "bsave" "byval" "cdecl" "chdir" "circle" "clear" "close"
@@ -1183,7 +1194,7 @@ Derived from `basic-mode'."
 
   ;; Shorter than "REM"
   (setq-local comment-start "'")
-  
+
   ;; Treat . and # as part of identifier ("input #" etc)
   (modify-syntax-entry ?. "w   " basic-mode-syntax-table)
   (modify-syntax-entry ?# "w   " basic-mode-syntax-table)

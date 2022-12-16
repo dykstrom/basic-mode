@@ -37,18 +37,18 @@ To install manually, place basic-mode.el in your load-path, and add the
 following lines of code to your init file:
 
 ```elisp
-(autoload 'basic-mode "basic-mode" "Major mode for editing BASIC code." t)
+(autoload 'basic-generic-mode "basic-mode" "Major mode for editing BASIC code." t)
 (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-generic-mode))
 ```
 
 
 ## BASIC Dialects
 
-Package basic-mode supports some of the many 
+Package basic-mode supports some of the many
 [BASIC dialects](https://en.wikipedia.org/wiki/List_of_BASIC_dialects) using
-sub modes derived from the main basic-mode. Section 
-[Available Sub Modes](#available-sub-modes) lists the currently existing 
-sub modes. In addition, basic-mode also provides a generic sub mode that will 
+sub modes derived from the main basic-mode. Section
+[Available Sub Modes](#available-sub-modes) lists the currently existing
+sub modes. In addition, basic-mode also provides a generic sub mode that will
 be used if no sub mode is specified.
 
 The sub mode configures, among other things, syntax highlighting and indentation,
@@ -57,14 +57,14 @@ which differs between dialects.
 
 ### Setting Sub Mode
 
-By default, basic-mode will open BASIC files in sub mode _basic-generic-mode_. 
+By default, basic-mode will open BASIC files in sub mode _basic-generic-mode_.
 There are several ways to change that behaviour if you prefer a specific sub mode.
 
 
 #### Manually
 
 After opening a file in Emacs, you can type _M-x MODE-NAME_ to set the sub mode,
-e.g. _M-x basic-zx81-mode_ to set the Sinclair ZX81 sub mode. 
+e.g. _M-x basic-zx81-mode_ to set the Sinclair ZX81 sub mode.
 
 
 #### File Variable
@@ -81,7 +81,7 @@ the TRS-80 Model 100 sub mode.
 #### Init File
 
 If you are always working with a specific BASIC dialect, you can configure Emacs to
-always open BASIC files in that sub mode. For example, adding the below line to your 
+always open BASIC files in that sub mode. For example, adding the below line to your
 init file will open all BASIC files in the Sinclair ZX81 sub mode.
 
 ```elisp
@@ -92,7 +92,7 @@ init file will open all BASIC files in the Sinclair ZX81 sub mode.
 ### Available Sub Modes
 
 This table lists the existing sub modes. If you feel that a sub mode
-is missing, the best way to bring it into existence is to create it 
+is missing, the best way to bring it into existence is to create it
 yourself, and submit a pull request to include it in basic-mode.
 
 <table>
