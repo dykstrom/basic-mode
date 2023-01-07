@@ -1,10 +1,10 @@
 ;;; basic-mode.el --- Major mode for editing BASIC code  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2017-2022 Johan Dykstrom
+;; Copyright (C) 2017-2023 Johan Dykstrom
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.0.0
+;; Version: 1.0.1
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -84,6 +84,7 @@
 
 ;;; Change Log:
 
+;;  1.0.1  2023-01-07  Fix renumber and add extra keywords.
 ;;  1.0.0  2022-12-17  Add support for BASIC dialects using derived modes.
 ;;                     Thanks to hackerb9.
 ;;  0.6.2  2022-11-12  Renumber and goto line number without separators.
@@ -182,7 +183,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.0.0"
+(defconst basic-mode-version "1.0.1"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -568,16 +569,25 @@ even if that creates overlaps."
     (if before-line-number
         (move-to-column current-column))))
 
+(defvar basic-jump-identifiers
+  (regexp-opt '("edit" "else"
+                "erl =" "erl <>" "erl >=" "erl <=" "erl >" "erl <"
+                "gosub" "go sub" "goto" "go to"
+                "list" "llist" "restore" "resume" "return" "run" "then"))
+  "Regexp that matches identifiers that identifies jumps in the code.")
+
 (defun basic-find-jumps ()
   "Find all jump targets and the jump statements that jump to them.
 This returns a hash with line numbers for keys.  The value of each entry
 is a list containing markers to each jump point (the number following a
 GOTO, GOSUB, etc.) that jumps to this line number."
-  (let ((jump-targets (make-hash-table)))
+  (let* ((jump-targets (make-hash-table))
+         (separator (if basic-syntax-highlighting-require-separator "[ \t]+" "[ \t]*"))
+         (regexp (concat basic-jump-identifiers separator)))
     (save-excursion
       (goto-char (point-min))
-      (while (re-search-forward "\\(go[ ]?\\(sub\\|to\\)\\|then\\|else\\)[ \t]*" nil t)
-        (while (looking-at "\\([0-9]+\\)\\(,[ \t]*\\)?")
+      (while (re-search-forward regexp nil t)
+        (while (looking-at "\\([0-9]+\\)\\([ \t]*[,-][ \t]*\\)?")
           (let* ((target-string (match-string-no-properties 1))
                  (target (string-to-number target-string))
                  (jmp-marker (copy-marker (+ (point) (length target-string)))))
@@ -739,13 +749,15 @@ If VARIABLE is not found, return nil."
   (let ((tab (make-char-table nil)))
     (set-char-table-range tab t #'basic-find-word-boundary)
     tab)
-  "Assigned to `find-word-boundary-function-table' when
+  "Char table of functions to search for the word boundary.
+Assigned to `find-word-boundary-function-table' when
 `basic-syntax-highlighting-require-separator' is nil; defers to
 `basic-find-word-boundary'.")
 
 (defconst basic-empty-char-table
   (make-char-table nil)
-  "Assigned to `find-word-boundary-function-table' when
+  "Char table of functions to search for the word boundary.
+Assigned to `find-word-boundary-function-table' when
 custom word boundry functionality is not active.")
 
 (defvar basic-forward-function 'basic-forward-internal
