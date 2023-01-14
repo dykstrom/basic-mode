@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.0.1
+;; Version: 1.0.2
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -84,6 +84,7 @@
 
 ;;; Change Log:
 
+;;  1.0.2  2023-01-14  Fix compile warnings for Emacs 29.
 ;;  1.0.1  2023-01-07  Fix renumber and add extra keywords.
 ;;  1.0.0  2022-12-17  Add support for BASIC dialects using derived modes.
 ;;                     Thanks to hackerb9.
@@ -183,7 +184,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.0.1"
+(defconst basic-mode-version "1.0.2"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -1074,10 +1075,10 @@ PC-8300) are also supported by this mode."
 
 
   ;; Adapt to coding for a 40 column screen
-  (setq-local comment-start "'"     ; Shorter than "REM"
-          comment-column 16
-          fill-column 36
-          display-fill-column-indicator-column 40)
+  (setq-local comment-start "'")    ; Shorter than "REM"
+  (setq-local comment-column 16)
+  (setq-local fill-column 36)
+  (setq-local display-fill-column-indicator-column 40)
 
   ;; Show an indicator of the Model 100's line width, if possible.
   (condition-case nil
