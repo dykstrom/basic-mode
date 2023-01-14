@@ -158,7 +158,7 @@ If nil, auto-numbering is turned off.  If not nil, this should be an
 integer defining the increment between line numbers, 10 is a traditional
 choice."
   :type '(choice (const :tag "Off" nil)
-		 integer)
+         integer)
   :group 'basic)
 
 (defcustom basic-renumber-increment 10
@@ -358,7 +358,7 @@ while other keywords do it when found at the beginning of a line."
           't
         ;; Keywords at the beginning of the line
         (beginning-of-line)
-        (re-search-forward "[^0-9 \t\n]" (point-at-eol) t)
+        (re-search-forward "[^0-9 \t\n]" (line-end-position) t)
         (basic-match-symbol-at-point-p basic-increase-indent-keywords-bol-regexp)))))
 
 (defun basic-decrease-indent-p ()
@@ -367,13 +367,13 @@ Some keywords trigger un-indentation when found at the beginning
 of a line or statement, see `basic-decrease-indent-keywords-bol'."
   (save-excursion
     (beginning-of-line)
-    (re-search-forward "[^0-9 \t\n]" (point-at-eol) t)
+    (re-search-forward "[^0-9 \t\n]" (line-end-position) t)
     (or (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol-regexp)
         (let ((match nil))
           (basic-code-search-backward)
           (beginning-of-line)
           (while (and (not match)
-                      (re-search-forward ":[ \t\n]*" (point-at-eol) t))
+                      (re-search-forward ":[ \t\n]*" (line-end-position) t))
             (setq match (basic-match-symbol-at-point-p basic-decrease-indent-keywords-bol-regexp)))
           match))))
 
@@ -383,7 +383,7 @@ The columns allocated to the line number are ignored."
   (save-excursion
     (beginning-of-line)
     ;; Skip line number and spaces
-    (skip-chars-forward "0-9 \t" (point-at-eol))
+    (skip-chars-forward "0-9 \t" (line-end-position))
     (- (current-column) basic-line-number-cols)))
 
 (defun basic-previous-indent ()
@@ -402,10 +402,10 @@ If there is no line number, also return non-nil."
     (if (not (basic-has-line-number-p))
         t
       (beginning-of-line)
-      (skip-chars-forward " \t" (point-at-eol))
-      (skip-chars-forward "0-9" (point-at-eol))
+      (skip-chars-forward " \t" (line-end-position))
+      (skip-chars-forward "0-9" (line-end-position))
       (and (looking-at "[ \t]")
-           (= (point) (+ (point-at-bol) basic-line-number-cols -1))))))
+           (= (point) (+ (line-beginning-position) basic-line-number-cols -1))))))
 
 (defun basic-code-indented-correctly-p ()
   "Return non-nil if code is indented correctly."
@@ -418,7 +418,7 @@ If there is no line number, also return non-nil."
   "Return non-nil if the current line has a line number."
   (save-excursion
     (beginning-of-line)
-    (skip-chars-forward " \t" (point-at-eol))
+    (skip-chars-forward " \t" (line-end-position))
     (looking-at "[0-9]")))
 
 (defun basic-remove-line-number ()
@@ -428,9 +428,9 @@ non-blank character after the line number."
   (if (not (basic-has-line-number-p))
       ""
     (beginning-of-line)
-    (re-search-forward "\\([0-9]+\\)" (point-at-eol) t)
+    (re-search-forward "\\([0-9]+\\)" (line-end-position) t)
     (let ((line-number (match-string-no-properties 1)))
-      (delete-region (point-at-bol) (match-end 1))
+      (delete-region (line-beginning-position) (match-end 1))
       line-number)))
 
 (defun basic-format-line-number (number)
@@ -513,7 +513,7 @@ trailing lines at the end of the buffer if the variable
   (save-excursion
     (when (basic-has-line-number-p)
       (beginning-of-line)
-      (re-search-forward "\\([0-9]+\\)" (point-at-eol) t)
+      (re-search-forward "\\([0-9]+\\)" (line-end-position) t)
       (let ((line-number (match-string-no-properties 1)))
         (string-to-number line-number)))))
 
@@ -539,24 +539,24 @@ even if that creates overlaps."
   (let* ((current-column (current-column))
          (current-line-number (basic-current-line-number))
          (before-line-number (basic-looking-at-line-number-p current-line-number))
-	     (next-line-number (save-excursion
-			                 (end-of-line)
-			                 (and (forward-word 1)
-				                  (basic-current-line-number))))
-	     (new-line-number (and current-line-number
-			                   basic-auto-number
-			                   (+ current-line-number basic-auto-number)))
+         (next-line-number (save-excursion
+                             (end-of-line)
+                             (and (forward-word 1)
+                                  (basic-current-line-number))))
+         (new-line-number (and current-line-number
+                               basic-auto-number
+                               (+ current-line-number basic-auto-number)))
          (comment-lead (basic-comment-lead)))
     (basic-indent-line)
     (newline)
     (when (and next-line-number
                new-line-number
-		       (<= next-line-number new-line-number))
-	  (setq new-line-number
-	        (+ current-line-number
-		       (truncate (- next-line-number current-line-number) 2)))
-	  (when (= new-line-number current-line-number)
-	    (setq new-line-number (1+ new-line-number))))
+               (<= next-line-number new-line-number))
+      (setq new-line-number
+            (+ current-line-number
+               (truncate (- next-line-number current-line-number) 2)))
+      (when (= new-line-number current-line-number)
+        (setq new-line-number (1+ new-line-number))))
     (unless before-line-number
       (if new-line-number
           (insert (concat (int-to-string new-line-number) " ")))
@@ -905,19 +905,19 @@ can be customized with variable
 This is called by `basic-mode' on startup and by its derived modes
 after making customizations to font-lock keywords and syntax tables."
   (setq-local basic-increase-indent-keywords-bol-regexp
-	      (regexp-opt basic-increase-indent-keywords-bol 'symbols))
+          (regexp-opt basic-increase-indent-keywords-bol 'symbols))
   (setq-local basic-increase-indent-keywords-eol-regexp
-	      (regexp-opt basic-increase-indent-keywords-eol 'symbols))
+          (regexp-opt basic-increase-indent-keywords-eol 'symbols))
   (setq-local basic-decrease-indent-keywords-bol-regexp
-	      (regexp-opt basic-decrease-indent-keywords-bol 'symbols))
+          (regexp-opt basic-decrease-indent-keywords-bol 'symbols))
 
   (let ((basic-constant-regexp (regexp-opt basic-constants 'symbols))
-	    (basic-function-regexp (regexp-opt basic-functions 'symbols))
-	    (basic-builtin-regexp (regexp-opt basic-builtins 'symbols))
-	    (basic-keyword-regexp (regexp-opt basic-keywords 'symbols))
-	    (basic-type-regexp (regexp-opt basic-types 'symbols)))
+        (basic-function-regexp (regexp-opt basic-functions 'symbols))
+        (basic-builtin-regexp (regexp-opt basic-builtins 'symbols))
+        (basic-keyword-regexp (regexp-opt basic-keywords 'symbols))
+        (basic-type-regexp (regexp-opt basic-types 'symbols)))
     (setq-local basic-font-lock-keywords
-	            (list (list basic-comment-regexp 0 'font-lock-comment-face)
+                (list (list basic-comment-regexp 0 'font-lock-comment-face)
                       (list basic-linenum-regexp 0 'font-lock-constant-face)
                       (list basic-label-regexp 0 'font-lock-constant-face)
                       (list basic-constant-regexp 0 'font-lock-constant-face)
@@ -956,25 +956,25 @@ please see `basic-m100-mode` and `basic-coco-mode`.
 Derived from `basic-mode'."
 
   (setq basic-functions
-	    '("abs" "asc" "atn" "cdbl" "cint" "chr$" "cos" "csng"
-	      "erl" "err" "exp" "fix" "fre" "inkey$" "inp" "int"
-	      "left$" "len" "log" "mem" "mid$" "point" "pos"
-	      "reset" "right$" "set" "sgn" "sin" "sqr" "str$"
-	      "string$" "tab" "tan" "time$" "usr" "val" "varptr"))
+        '("abs" "asc" "atn" "cdbl" "cint" "chr$" "cos" "csng"
+          "erl" "err" "exp" "fix" "fre" "inkey$" "inp" "int"
+          "left$" "len" "log" "mem" "mid$" "point" "pos"
+          "reset" "right$" "set" "sgn" "sin" "sqr" "str$"
+          "string$" "tab" "tan" "time$" "usr" "val" "varptr"))
 
   (setq basic-builtins
-	    '("?" "auto" "clear" "cload" "cload?" "cls"
-	      "data" "delete" "edit" "input" "input #" "let"
-	      "list" "llist" "lprint" "lprint tab" "lprint using"
-	      "new" "mod" "not" "or" "out" "peek" "poke"
-	      "print" "print tab" "print using"
-	      "read" "restore" "resume" "system" "troff" "tron"))
+        '("?" "auto" "clear" "cload" "cload?" "cls"
+          "data" "delete" "edit" "input" "input #" "let"
+          "list" "llist" "lprint" "lprint tab" "lprint using"
+          "new" "mod" "not" "or" "out" "peek" "poke"
+          "print" "print tab" "print using"
+          "read" "restore" "resume" "system" "troff" "tron"))
 
   (setq basic-keywords
-	    '("as" "call" "defdbl" "defint" "defsng" "defstr"
-	      "dim" "do" "else" "end" "error" "for"
-	      "gosub" "goto" "go to" "if" "next" "on"
-	      "step" "random" "return" "then" "to"))
+        '("as" "call" "defdbl" "defint" "defsng" "defstr"
+          "dim" "do" "else" "end" "error" "for"
+          "gosub" "goto" "go to" "if" "next" "on"
+          "step" "random" "return" "then" "to"))
 
   ;; Treat ? and # as part of identifier ("cload?" and "input #")
   (modify-syntax-entry ?? "w   " basic-mode-syntax-table)
@@ -995,7 +995,7 @@ PC-8300) are also supported by this mode."
 
   ;; * M100 BASIC arithmetic and conditional ops probably should not be
   ;;   highlighted at all. They are too common. They are:
-  ;;   =, <, >, <=, >=, <>, 	+, -, *, /, 	\, ^
+  ;;   =, <, >, <=, >=, <>,     +, -, *, /,     \, ^
 
   ;; * M100 BASIC reserves DEF.* and RAND.*, although they appear to
   ;;   be stubs which do nothing. (Perhaps to allow for future
@@ -1008,7 +1008,7 @@ PC-8300) are also supported by this mode."
   ;;   it makes sense for now to make AS and NAME both keywords and
   ;;   OUTPUT a builtin just so the syntax highlighting looks right.
   ;;
-  ;;	 	10 FOR T=1 TO 1000
+  ;;        10 FOR T=1 TO 1000
   ;;		20 OPEN "FOO" FOR INPUT AS #1
   ;;		30 OPEN "BAR" FOR OUTPUT AS #2
   ;;		40 NAME "BAZ" AS "QUUX"
@@ -1018,39 +1018,39 @@ PC-8300) are also supported by this mode."
   ;;   have a way to do that.
 
   (setq basic-functions
-	'("abs" "asc" "atn" "cdbl" "chr$" "cint" "cos" "csng" "csrlin"
-	  "date$" "day$" "eof" "erl" "err" "exp" "fix" "fre" "himem"
-	  "inkey$" "inp" "input$" "instr" "int" "left$" "len" "log" "lpos"
-	  "maxfiles" "maxram" "mid$" "pos" "right$" "rnd" "sgn" "sin"
-	  "space$" "sqr" "str$" "string$" "tab" "tan" "time$" "val"
-	  "varptr"))
+    '("abs" "asc" "atn" "cdbl" "chr$" "cint" "cos" "csng" "csrlin"
+      "date$" "day$" "eof" "erl" "err" "exp" "fix" "fre" "himem"
+      "inkey$" "inp" "input$" "instr" "int" "left$" "len" "log" "lpos"
+      "maxfiles" "maxram" "mid$" "pos" "right$" "rnd" "sgn" "sin"
+      "space$" "sqr" "str$" "string$" "tab" "tan" "time$" "val"
+      "varptr"))
 
   (setq basic-builtins
-	'("?" "and" "beep" "clear" "cload" "cload?" "cloadm" "close"
-	  "cls" "cont" "csave" "csavem" "data" "dski$" "dsko$" "edit"
-	  "eqv" "files" "imp" "input" "input #" "ipl" "key" "kill"
-	  "lcopy" "let" "line" "list" "llist" "load" "loadm" "lprint"
-	  "lprint tab" "lprint using" "menu" "merge" "mod" "motor"
-	  "name" "new" "not" "open" "or" "out" "output" "peek" "poke"
-	  "power" "preset" "print" "print @" "print tab" "print using"
-	  "pset" "read" "restore" "resume" "save" "savem" "screen" "sound"
-	  "xor"))
+    '("?" "and" "beep" "clear" "cload" "cload?" "cloadm" "close"
+      "cls" "cont" "csave" "csavem" "data" "dski$" "dsko$" "edit"
+      "eqv" "files" "imp" "input" "input #" "ipl" "key" "kill"
+      "lcopy" "let" "line" "list" "llist" "load" "loadm" "lprint"
+      "lprint tab" "lprint using" "menu" "merge" "mod" "motor"
+      "name" "new" "not" "open" "or" "out" "output" "peek" "poke"
+      "power" "preset" "print" "print @" "print tab" "print using"
+      "pset" "read" "restore" "resume" "save" "savem" "screen" "sound"
+      "xor"))
 
   (setq basic-keywords
-	'("as" "call" "com" "defdbl" "defint" "defsng" "defstr" "dim"
-	  "else" "end" "error" "for" "go to" "gosub" "goto" "if" "mdm"
-	  "next" "off" "on" "on com gosub" "on error goto" "on key gosub"
-	  "on mdm gosub" "on time$" "random" "return" "run" "runm"
-	  "sound off" "sound on" "step" "stop" "then"
-	  "time$ on" "time$ off" "time$ stop" "to"))
+    '("as" "call" "com" "defdbl" "defint" "defsng" "defstr" "dim"
+      "else" "end" "error" "for" "go to" "gosub" "goto" "if" "mdm"
+      "next" "off" "on" "on com gosub" "on error goto" "on key gosub"
+      "on mdm gosub" "on time$" "random" "return" "run" "runm"
+      "sound off" "sound on" "step" "stop" "then"
+      "time$ on" "time$ off" "time$ stop" "to"))
 
   ;; The Model 100 Disk/Video Interface adds a few BASIC commands
   ;; (that actually already exist in the M100 ROM as reserved keywords!)
   ;; "LFILES", "DSKO$", "DSKI$", "LOC", "LOF"
   (setq basic-functions
-	(append basic-functions '("loc" "lof")))
+    (append basic-functions '("loc" "lof")))
   (setq basic-builtins
-	(append basic-builtins '("dski$" "dsko$" "lfiles" "width")))
+    (append basic-builtins '("dski$" "dsko$" "lfiles" "width")))
 
   ;; NEC's N82 BASIC has slightly different keywords, gains some, loses some.
   ;; Change: loadm -> BLOAD, savem -> BSAVE, call -> EXEC, print @ -> LOCATE.
@@ -1059,14 +1059,14 @@ PC-8300) are also supported by this mode."
   ;; Adds stubs for: CMD, COLOR, DSKF, FORMAT, STATUS, MAX
   ;; Loses: csavem, day$, def, himem, ipl, lcopy, maxram, mdm
   (setq basic-builtins
-	(append basic-builtins '("bload" "bload?" "bsave" "cmd" "color" "dskf"
-				 "exec" "format" "locate" "status" "max")))
+    (append basic-builtins '("bload" "bload?" "bsave" "cmd" "color" "dskf"
+                 "exec" "format" "locate" "status" "max")))
 
   ;; NEC PC-8241A CRT adapter for the 8201A has an extended "CRT-BASIC".
   (setq basic-builtins
-	(append basic-builtins '("cmd circle" "cmd paint" "color")))
+    (append basic-builtins '("cmd circle" "cmd paint" "color")))
   (setq basic-functions
-	(append basic-functions '("status point")))
+    (append basic-functions '("status point")))
 
   ;; Treat ? and # as part of identifier ("cload?" and "input #")
   (modify-syntax-entry ?? "w   " basic-mode-syntax-table)
@@ -1074,10 +1074,10 @@ PC-8300) are also supported by this mode."
 
 
   ;; Adapt to coding for a 40 column screen
-  (setq-local comment-start "'" 	; Shorter than "REM"
-	      comment-column 16
-	      fill-column 36
-	      display-fill-column-indicator-column 40)
+  (setq-local comment-start "'"     ; Shorter than "REM"
+          comment-column 16
+          fill-column 36
+          display-fill-column-indicator-column 40)
 
   ;; Show an indicator of the Model 100's line width, if possible.
   (condition-case nil
@@ -1119,7 +1119,7 @@ Derived from `basic-mode'."
 Derived from `basic-zx81-mode'."
 
   (setq basic-functions
-	    (append basic-functions '("attr" "bin" "in" "point" "screen$" "val$")))
+        (append basic-functions '("attr" "bin" "in" "point" "screen$" "val$")))
 
   (setq basic-builtins
         (append basic-builtins '("beep" "border" "bright" "cat" "cat #"
