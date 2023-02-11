@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.0.2
+;; Version: 1.0.3
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -84,6 +84,7 @@
 
 ;;; Change Log:
 
+;;  1.0.3  2023-02-11  Fix tab bug when indenting code with line numbers.
 ;;  1.0.2  2023-01-14  Fix compile warnings for Emacs 29.
 ;;  1.0.1  2023-01-07  Fix renumber and add extra keywords.
 ;;  1.0.0  2022-12-17  Add support for BASIC dialects using derived modes.
@@ -184,7 +185,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.0.2"
+(defconst basic-mode-version "1.0.3"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -445,21 +446,15 @@ non-blank character after the line number."
   ;; Remove line number
   (let* ((line-number (basic-remove-line-number))
          (formatted-number (basic-format-line-number line-number))
-	 (beg (point)))
+         (beg (point)))
     ;; Indent line
     (indent-line-to column)
     ;; Add line number again
-    (untabify beg (point))
+    (unless (string-empty-p line-number)
+      (untabify beg (point)))
     (beginning-of-line)
-    ;; (setq beg (point))
-    (insert formatted-number)
 
-    ;; Note: re-tabifying doesn't make sense if after adding in the
-    ;; line number the indentation doesn't align with tabs.
-    ;;
-    ;;    (end-of-line)
-    ;;    (tabify beg (point))
-    ))
+    (insert formatted-number)))
 
 (defun basic-electric-colon ()
   "Insert a colon and re-indent line."
