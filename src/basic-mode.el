@@ -450,7 +450,7 @@ non-blank character after the line number."
     ;; Indent line
     (indent-line-to column)
     ;; Add line number again
-    (unless (string-empty-p line-number)
+    (unless (string= line-number "")
       (untabify beg (point)))
     (beginning-of-line)
 
