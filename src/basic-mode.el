@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.0.3
+;; Version: 1.0.4
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -84,6 +84,7 @@
 
 ;;; Change Log:
 
+;;  1.0.4  2023-03-11  Allow renumbering when basic-line-number-cols is 0.
 ;;  1.0.3  2023-02-11  Fix tab bug when indenting code with line numbers.
 ;;  1.0.2  2023-01-14  Fix compile warnings for Emacs 29.
 ;;  1.0.1  2023-01-07  Fix renumber and add extra keywords.
@@ -185,7 +186,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.0.3"
+(defconst basic-mode-version "1.0.4"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -438,7 +439,7 @@ non-blank character after the line number."
 (defun basic-format-line-number (number)
   "Format NUMBER as a line number."
   (if (= basic-line-number-cols 0)
-      number
+      (format "%s" number)
     (format (concat "%" (number-to-string (- basic-line-number-cols 1)) "s ") number)))
 
 (defun basic-indent-line-to (column)
@@ -641,37 +642,35 @@ have numbers are included in the renumbering."
                             (format "Increment (default %d): " basic-renumber-increment)
                             nil nil
                             (int-to-string basic-renumber-increment)))))
-  (if (zerop basic-line-number-cols)
-      (message "No room for numbers.  Please adjust `basic-line-number-cols'.")
-    (let ((new-line-number start)
-          (jump-list (basic-find-jumps))
-          (point-start (if (use-region-p) (region-beginning) (point-min)))
-          (point-end (if (use-region-p) (copy-marker (region-end)) (copy-marker (point-max)))))
-      (save-excursion
-        (goto-char point-start)
-        (while (< (point) point-end)
-          (unless (looking-at "^[ \t]*$")
-            (let ((current-line-number (string-to-number (basic-remove-line-number))))
-              (when (or basic-renumber-unnumbered-lines
-                        (not (zerop current-line-number)))
-                (let ((jump-locations (gethash current-line-number jump-list)))
-                  (save-excursion
-                    (dolist (p jump-locations)
-                      (goto-char (marker-position p))
-                      (set-marker p nil)
-                      (backward-kill-word 1)
-                      (insert (int-to-string new-line-number)))))
-                (indent-line-to (basic-calculate-indent))
-                (beginning-of-line)
-                (insert (basic-format-line-number new-line-number))
-                (setq new-line-number (+ new-line-number increment)))))
-          (forward-line 1)))
-      (set-marker point-end nil)
-      (maphash (lambda (_target sources)
-                 (dolist (m sources)
-                   (when (marker-position m)
-                     (set-marker m nil))))
-               jump-list))))
+  (let ((new-line-number start)
+        (jump-list (basic-find-jumps))
+        (point-start (if (use-region-p) (region-beginning) (point-min)))
+        (point-end (if (use-region-p) (copy-marker (region-end)) (copy-marker (point-max)))))
+    (save-excursion
+      (goto-char point-start)
+      (while (< (point) point-end)
+        (unless (looking-at "^[ \t]*$")
+          (let ((current-line-number (string-to-number (basic-remove-line-number))))
+            (when (or basic-renumber-unnumbered-lines
+                      (not (zerop current-line-number)))
+              (let ((jump-locations (gethash current-line-number jump-list)))
+                (save-excursion
+                  (dolist (p jump-locations)
+                    (goto-char (marker-position p))
+                    (set-marker p nil)
+                    (backward-kill-word 1)
+                    (insert (int-to-string new-line-number)))))
+              (beginning-of-line)
+              (insert (basic-format-line-number new-line-number))
+              (basic-indent-line)
+              (setq new-line-number (+ new-line-number increment)))))
+        (forward-line 1)))
+    (set-marker point-end nil)
+    (maphash (lambda (_target sources)
+               (dolist (m sources)
+                 (when (marker-position m)
+                   (set-marker m nil))))
+             jump-list)))
 
 ;; ----------------------------------------------------------------------------
 ;; Xref backend:
