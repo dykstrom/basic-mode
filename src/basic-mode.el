@@ -924,6 +924,8 @@ after making customizations to font-lock keywords and syntax tables."
     (setq-local basic-font-lock-keywords
                 (list (list basic-comment-regexp 0 'font-lock-comment-face)
                       (list basic-linenum-regexp 0 'font-lock-constant-face)
+                      (list 'basic-find-linenum-ref 2 'font-lock-constant-face)
+                      (list 'basic-find-linenum-ref-goto 2 'font-lock-constant-face)
                       (list basic-label-regexp 0 'font-lock-constant-face)
                       (list basic-constant-regexp 0 'font-lock-constant-face)
                       (list basic-keyword-regexp 0 'font-lock-keyword-face)
@@ -939,6 +941,51 @@ after making customizations to font-lock keywords and syntax tables."
     (setq-local find-word-boundary-function-table basic-find-word-boundary-function-table))
   (unless font-lock-mode
     (font-lock-mode 1)))
+
+;; TODO: Make special logic for DELETE, RENUM and LIST, since they are non-trivial like GOTO?
+
+(defun basic-find-linenum-ref (bound)
+  "Search forward from point to BOUND for line number references.
+Set point to the end of the occurrence found, and return point.
+This function finds all line number references except those
+after GOTO/GOSUB."
+  (let* ((s (if basic-syntax-highlighting-require-separator "\s+" "\s*"))
+         (regexp (concat "\\(delete" s
+                         "\\|edit" s
+                         "\\|else" s
+                         "\\|erl\s*=\s*"
+                         "\\|erl\s*<>\s*"
+                         "\\|erl\s*<\s*"
+                         "\\|erl\s*>\s*"
+                         "\\|erl\s*<=\s*"
+                         "\\|erl\s*>=\s*"
+                         "\\|list" s
+                         "\\|llist" s
+                         "\\|renum" s
+                         "\\|restore" s
+                         "\\|resume" s
+                         "\\|return" s
+                         "\\|run" s
+                         "\\|then" s
+                         "\\)"
+                         "\\([0-9]+\\)")))
+    (re-search-forward regexp bound t)))
+
+(defun basic-find-linenum-ref-goto (bound)
+  "Search forward from point to BOUND for GOTO/GOSUB line number references.
+Set point to the end of the occurrence found, and return point.
+This function finds line number references after GOTO/GOSUB and
+ON x GOTO/GOSUB statements."
+  (let* ((s (if basic-syntax-highlighting-require-separator "\s+" "\s*"))
+         (bwd-regexp "\\(go\s*to\\|go\s*sub\\)[\s,0-9]*")
+         (fwd-regexp "\\([\s,]*\\)\\([0-9]+\\)")
+         (nxt-regexp (concat "\\(go\s*to\\|go\s*sub\\)" s "\\([0-9]+\\)")))
+    (if (and (looking-back bwd-regexp (line-beginning-position)) (looking-at fwd-regexp))
+        ;; If the previous keyword was a GOTO/GOSUB followed by a line number, and we
+        ;; are looking at another line number, this is an ON x GOTO/GOSUB statement
+        (goto-char (match-end 2))
+      ;; Otherwise, look for the next GOTO/GOSUB followed by a line number
+      (re-search-forward nxt-regexp bound t))))
 
 ;; ----------------------------------------------------------------------------
 ;; Derived modes:
