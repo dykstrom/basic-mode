@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.0.4
+;; Version: 1.1.0
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -84,6 +84,7 @@
 
 ;;; Change Log:
 
+;;  1.1.0  2023-04-01  Highlight references to line numbers.
 ;;  1.0.4  2023-03-11  Allow renumbering when basic-line-number-cols is 0.
 ;;  1.0.3  2023-02-11  Fix tab bug when indenting code with line numbers.
 ;;  1.0.2  2023-01-14  Fix compile warnings for Emacs 29.
@@ -186,7 +187,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.0.4"
+(defconst basic-mode-version "1.1.0"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -926,6 +927,8 @@ after making customizations to font-lock keywords and syntax tables."
                       (list basic-linenum-regexp 0 'font-lock-constant-face)
                       (list 'basic-find-linenum-ref 2 'font-lock-constant-face)
                       (list 'basic-find-linenum-ref-goto 2 'font-lock-constant-face)
+                      (list 'basic-find-linenum-ref-delete 2 'font-lock-constant-face)
+                      (list 'basic-find-linenum-ref-renum 1 'font-lock-constant-face)
                       (list basic-label-regexp 0 'font-lock-constant-face)
                       (list basic-constant-regexp 0 'font-lock-constant-face)
                       (list basic-keyword-regexp 0 'font-lock-keyword-face)
@@ -942,16 +945,12 @@ after making customizations to font-lock keywords and syntax tables."
   (unless font-lock-mode
     (font-lock-mode 1)))
 
-;; TODO: Make special logic for DELETE, RENUM and LIST, since they are non-trivial like GOTO?
-
 (defun basic-find-linenum-ref (bound)
   "Search forward from point to BOUND for line number references.
 Set point to the end of the occurrence found, and return point.
-This function finds all line number references except those
-after GOTO/GOSUB."
+This function handles the base case using a single regexp."
   (let* ((s (if basic-syntax-highlighting-require-separator "\s+" "\s*"))
-         (regexp (concat "\\(delete" s
-                         "\\|edit" s
+         (regexp (concat "\\(edit" s
                          "\\|else" s
                          "\\|erl\s*=\s*"
                          "\\|erl\s*<>\s*"
@@ -959,9 +958,6 @@ after GOTO/GOSUB."
                          "\\|erl\s*>\s*"
                          "\\|erl\s*<=\s*"
                          "\\|erl\s*>=\s*"
-                         "\\|list" s
-                         "\\|llist" s
-                         "\\|renum" s
                          "\\|restore" s
                          "\\|resume" s
                          "\\|return" s
@@ -975,16 +971,44 @@ after GOTO/GOSUB."
   "Search forward from point to BOUND for GOTO/GOSUB line number references.
 Set point to the end of the occurrence found, and return point.
 This function finds line number references after GOTO/GOSUB and
-ON x GOTO/GOSUB statements."
+ON x GOTO/GOSUB."
   (let* ((s (if basic-syntax-highlighting-require-separator "\s+" "\s*"))
-         (bwd-regexp "\\(go\s*to\\|go\s*sub\\)[\s,0-9]*")
+         (bwd-regexp "go\s*\\(to\\|sub\\)[\s,0-9]+")
          (fwd-regexp "\\([\s,]*\\)\\([0-9]+\\)")
-         (nxt-regexp (concat "\\(go\s*to\\|go\s*sub\\)" s "\\([0-9]+\\)")))
+         (nxt-regexp (concat "go\s*\\(to\\|sub\\)" s "\\([0-9]+\\)")))
     (if (and (looking-back bwd-regexp (line-beginning-position)) (looking-at fwd-regexp))
-        ;; If the previous keyword was a GOTO/GOSUB followed by a line number, and we
+        ;; If the previous keyword was GOTO/GOSUB followed by a line number, and we
         ;; are looking at another line number, this is an ON x GOTO/GOSUB statement
         (goto-char (match-end 2))
       ;; Otherwise, look for the next GOTO/GOSUB followed by a line number
+      (re-search-forward nxt-regexp bound t))))
+
+(defun basic-find-linenum-ref-delete (bound)
+  "Search forward from point to BOUND for DELETE/LIST line number references.
+Set point to the end of the occurrence found, and return point."
+  (let* ((s (if basic-syntax-highlighting-require-separator "\s+" "\s*"))
+         (bwd-regexp "\\(delete\\|ll?ist\\)[-\s0-9]+")
+         (fwd-regexp "\\([-\s]*\\)\\([0-9]+\\)")
+         (nxt-regexp (concat "\\(delete\\|ll?ist\\)" s "[-\s]*\\([0-9]+\\)")))
+    (if (and (looking-back bwd-regexp (line-beginning-position)) (looking-at fwd-regexp))
+        ;; If the previous keyword was DELETE/LIST followed by a line number,
+        ;; and we are looking at another line number
+        (goto-char (match-end 2))
+      ;; Otherwise, look for the next DELETE/LIST followed by a line number
+      (re-search-forward nxt-regexp bound t))))
+
+(defun basic-find-linenum-ref-renum (bound)
+  "Search forward from point to BOUND for RENUM line number references.
+Set point to the end of the occurrence found, and return point."
+  (let* ((s (if basic-syntax-highlighting-require-separator "\s+" "\s*"))
+         (bwd-regexp "renum[\s0-9]+")
+         (fwd-regexp "[\s,]*\\([0-9]+\\)")
+         (nxt-regexp (concat "renum" s "[\s,]*\\([0-9]+\\)")))
+    (if (and (looking-back bwd-regexp (line-beginning-position)) (looking-at fwd-regexp))
+        ;; If the previous keyword was RENUM followed by a line number,
+        ;; and we are looking at another line number
+        (goto-char (match-end 1))
+      ;; Otherwise, look for the next RENUM followed by a line number
       (re-search-forward nxt-regexp bound t))))
 
 ;; ----------------------------------------------------------------------------
