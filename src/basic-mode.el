@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.1.0
+;; Version: 1.1.1
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -84,6 +84,7 @@
 
 ;;; Change Log:
 
+;;  1.1.1  2023-08-26  Fix syntax highlighting for Emacs 29.
 ;;  1.1.0  2023-04-01  Highlight references to line numbers.
 ;;  1.0.4  2023-03-11  Allow renumbering when basic-line-number-cols is 0.
 ;;  1.0.3  2023-02-11  Fix tab bug when indenting code with line numbers.
@@ -187,7 +188,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.1.0"
+(defconst basic-mode-version "1.1.1"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -942,8 +943,7 @@ after making customizations to font-lock keywords and syntax tables."
         (setq-local find-word-boundary-function-table basic-empty-char-table))
     (setq-local font-lock-defaults (list basic-font-lock-keywords nil t basic-font-lock-syntax))
     (setq-local find-word-boundary-function-table basic-find-word-boundary-function-table))
-  (unless font-lock-mode
-    (font-lock-mode 1)))
+  (font-lock-refresh-defaults))
 
 (defun basic-find-linenum-ref (bound)
   "Search forward from point to BOUND for line number references.
