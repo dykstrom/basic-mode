@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.1.1
+;; Version: 1.1.2
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -84,6 +84,7 @@
 
 ;;; Change Log:
 
+;;  1.1.2  2023-??-??  Add xref lookup of constants.
 ;;  1.1.1  2023-08-26  Fix syntax highlighting for Emacs 29.
 ;;  1.1.0  2023-04-01  Highlight references to line numbers.
 ;;  1.0.4  2023-03-11  Allow renumbering when basic-line-number-cols is 0.
@@ -188,7 +189,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.1.1"
+(defconst basic-mode-version "1.1.2"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -712,13 +713,16 @@ If no definitions can be found, return nil."
   (let (xrefs)
     (let ((line-number (basic-xref-find-line-number identifier))
           (label (basic-xref-find-label identifier))
-          (variables (basic-xref-find-variable identifier)))
+          (variables (basic-xref-find-variable identifier))
+          (constants (basic-xref-find-constant identifier)))
       (when line-number
         (push (basic-xref-make-xref (format "%s (line number)" identifier) (current-buffer) line-number) xrefs))
       (when label
         (push (basic-xref-make-xref (format "%s (label)" identifier) (current-buffer) label) xrefs))
       (cl-loop for variable in variables do
             (push (basic-xref-make-xref (format "%s (variable)" identifier) (current-buffer) variable) xrefs))
+      (cl-loop for constant in constants do
+            (push (basic-xref-make-xref (format "%s (constant)" identifier) (current-buffer) constant) xrefs))
       xrefs)))
 
 (defun basic-xref-find-line-number (line-number)
@@ -744,7 +748,28 @@ If VARIABLE is not found, return nil."
   (save-excursion
     (goto-char (point-min))
     (let (positions)
-      (while (re-search-forward (concat "\\_<dim\\_>.*\\_<\\(" variable "\\)\\_>") nil t)
+      ;; Search for "dim ... VARIABLE [subscripts] as"
+      (while (re-search-forward (concat "\\_<dim\\_>.*"
+                                        "\\_<\\(" variable "\\)\\_>"
+                                        "\\((.*)\\)?"
+                                        "\\s-+as")
+                                nil
+                                t)
+        (push (match-beginning 1) positions))
+      positions)))
+
+(defun basic-xref-find-constant (constant)
+  "Return a list of buffer positions where CONSTANT is defined.
+If CONSTANT is not found, return nil."
+  (save-excursion
+    (goto-char (point-min))
+    (let (positions)
+      ;; Search for "const ... CONSTANT ="
+      (while (re-search-forward (concat "\\_<const\\_>.*"
+                                        "\\_<\\(" constant "\\)\\_>"
+                                        "\\s-+=")
+                                nil
+                                t)
         (push (match-beginning 1) positions))
       positions)))
 
