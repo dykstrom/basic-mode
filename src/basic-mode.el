@@ -45,9 +45,8 @@
 ;; renumber all lines in the region, or the entire buffer, including
 ;; any jumps in the code.
 ;;
-;; Type M-. to lookup the line number, label, or variable at point,
-;; and type M-, to go back again.  See also function
-;; `xref-find-definitions'.
+;; Type M-. to lookup the line number, label, variable, or constant at point,
+;; and type M-, to go back again.  See also function `xref-find-definitions'.
 
 ;; Installation:
 
@@ -84,7 +83,7 @@
 
 ;;; Change Log:
 
-;;  1.1.2  2023-??-??  Add xref lookup of constants.
+;;  1.1.2  2023-09-02  Add xref lookup of constants.
 ;;  1.1.1  2023-08-26  Fix syntax highlighting for Emacs 29.
 ;;  1.1.0  2023-04-01  Highlight references to line numbers.
 ;;  1.0.4  2023-03-11  Allow renumbering when basic-line-number-cols is 0.
