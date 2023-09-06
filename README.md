@@ -101,6 +101,10 @@ yourself, and submit a pull request to include it in basic-mode.
     <th align="left">Sub Mode</th>
   </tr>
   <tr>
+    <td>Dartmouth</td>
+    <td>basic-dartmouth-mode</td>
+  </tr>
+  <tr>
     <td>Microsoft QuickBasic 4.5</td>
     <td>basic-qb45-mode</td>
   </tr>

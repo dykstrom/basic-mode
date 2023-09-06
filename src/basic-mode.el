@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.1.2
+;; Version: 1.2.0
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -83,6 +83,7 @@
 
 ;;; Change Log:
 
+;;  1.2.0  2023-09-??  Add derived mode for Dartmouth BASIC.
 ;;  1.1.2  2023-09-02  Add xref lookup of constants.
 ;;  1.1.1  2023-08-26  Fix syntax highlighting for Emacs 29.
 ;;  1.1.0  2023-04-01  Highlight references to line numbers.
@@ -118,8 +119,9 @@
 
 ;;; Code:
 
-(require 'simple)
+(require 'font-lock)
 (require 'seq)
+(require 'simple)
 
 ;; ----------------------------------------------------------------------------
 ;; Customization:
@@ -188,7 +190,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.1.2"
+(defconst basic-mode-version "1.2.0"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -233,19 +235,16 @@ beginning of a line or after a statement separator (:).")
   "List of symbols to highlight as constants.")
 
 (defvar-local basic-functions
-  '("abs" "asc" "atn" "chr$" "cos" "exp" "int" "len" "log"
-    "pi" "rnd" "sgn" "sin" "sqr" "str$" "tab" "tan" "val")
+  '("abs" "atn" "cos" "exp" "int" "log" "rnd" "sin" "sqr" "tan")
   "List of symbols to highlight as functions.")
 
 (defvar-local basic-builtins
-  '("and" "cls" "data" "input" "let" "mod" "not" "or"
-    "peek" "poke" "print" "read" "restore" "xor")
+  '("data" "let" "print" "read")
   "List of symbols to highlight as builtins.")
 
 (defvar-local basic-keywords
-  '("def fn" "dim" "else" "end" "error" "exit"
-    "for" "gosub" "go sub" "goto" "go to" "if" "next"
-    "on" "step" "randomize" "return" "then" "to")
+  '("def" "dim" "end" "for" "gosub" "goto" "if" "next"
+    "step" "stop" "return" "then" "to")
   "List of symbols to highlight as keywords.")
 
 (defvar-local basic-types
@@ -1039,13 +1038,29 @@ Set point to the end of the occurrence found, and return point."
 ;; Derived modes:
 ;; ----------------------------------------------------------------------------
 
-;;;###autoload (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-generic-mode))
-
 ;;;###autoload
-(define-derived-mode basic-generic-mode basic-qb45-mode "Basic[Generic]"
-  "Generic BASIC programming mode.
-This is the default mode that will be used if no sub mode is specified.
-Derived from `basic-qb45-mode'.  For more information, see `basic-mode'."
+(define-derived-mode basic-dartmouth-mode basic-mode "Basic[Dartmouth]"
+  "Programming mode for Dartmouth BASIC, editions one to four.
+Derived from `basic-mode'."
+
+  ;; The second edition adds the MAT keyword
+  (setq basic-builtins
+    (append basic-builtins '("mat")))
+
+  ;; The third edition adds INPUT, RESTORE, and SGN
+  (setq basic-builtins
+    (append basic-builtins '("input" "restore")))
+  (setq basic-functions
+    (append basic-functions '("sgn")))
+
+  ;; The fourth edition adds CHANGE, ON, RANDOMIZE, and TAB
+  (setq basic-builtins
+    (append basic-builtins '("change" "randomize")))
+  (setq basic-functions
+    (append basic-functions '("tab")))
+  (setq basic-keywords
+    (append basic-keywords '("on")))
+  
   (basic-mode-initialize))
 
 ;;;###autoload
@@ -1232,7 +1247,7 @@ Derived from `basic-zx81-mode'."
         (seq-difference basic-builtins '("fast" "rand" "slow")))
 
   (setq basic-keywords
-        (append basic-keywords '("def fn" "go sub" "go to")))
+        (append basic-keywords '("def" "fn" "go sub" "go to")))
 
   ;; Treat # as part of identifier ("open #" etc)
   (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
@@ -1312,6 +1327,15 @@ Derived from `basic-mode'."
   (modify-syntax-entry ?# "w   " basic-mode-syntax-table)
 
   (basic-mode-initialize))
+
+;;;###autoload
+(define-derived-mode basic-generic-mode basic-qb45-mode "Basic[Generic]"
+  "Generic BASIC programming mode.
+This is the default mode that will be used if no sub mode is specified.
+Derived from `basic-qb45-mode'.  For more information, see `basic-mode'."
+  (basic-mode-initialize))
+
+;;;###autoload (add-to-list 'auto-mode-alist '("\\.bas\\'" . basic-generic-mode))
 
 ;; ----------------------------------------------------------------------------
 
