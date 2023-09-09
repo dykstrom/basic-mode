@@ -83,7 +83,7 @@
 
 ;;; Change Log:
 
-;;  1.2.0  2023-09-??  Add derived mode for Dartmouth BASIC.
+;;  1.2.0  2023-09-09  Add derived mode for Dartmouth BASIC.
 ;;  1.1.2  2023-09-02  Add xref lookup of constants.
 ;;  1.1.1  2023-08-26  Fix syntax highlighting for Emacs 29.
 ;;  1.1.0  2023-04-01  Highlight references to line numbers.
