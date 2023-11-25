@@ -4,7 +4,7 @@
 
 ;; Author: Johan Dykstrom
 ;; Created: Sep 2017
-;; Version: 1.2.0
+;; Version: 1.2.1
 ;; Keywords: basic, languages
 ;; URL: https://github.com/dykstrom/basic-mode
 ;; Package-Requires: ((seq "2.20") (emacs "25.1"))
@@ -45,8 +45,8 @@
 ;; renumber all lines in the region, or the entire buffer, including
 ;; any jumps in the code.
 ;;
-;; Type M-. to lookup the line number, label, variable, or constant at point,
-;; and type M-, to go back again.  See also function `xref-find-definitions'.
+;; Type M-. to lookup the definition of the identifier at point, and type M-,
+;; to go back again. See also function `xref-find-definitions'.
 
 ;; Installation:
 
@@ -83,6 +83,7 @@
 
 ;;; Change Log:
 
+;;  1.2.1  2023-11-25  Add xref lookup of DEF FN functions and parameters.
 ;;  1.2.0  2023-09-09  Add derived mode for Dartmouth BASIC.
 ;;  1.1.2  2023-09-02  Add xref lookup of constants.
 ;;  1.1.1  2023-08-26  Fix syntax highlighting for Emacs 29.
@@ -190,7 +191,7 @@ If nil, the default, keywords separated by numbers will also be highlighted."
 ;; Variables:
 ;; ----------------------------------------------------------------------------
 
-(defconst basic-mode-version "1.2.0"
+(defconst basic-mode-version "1.2.1"
   "The current version of `basic-mode'.")
 
 (defvar-local basic-increase-indent-keywords-bol
@@ -708,20 +709,26 @@ have numbers are included in the renumbering."
   "Find definitions of IDENTIFIER.
 Return a list of xref objects with the definitions found.
 If no definitions can be found, return nil."
-  (let (xrefs)
-    (let ((line-number (basic-xref-find-line-number identifier))
-          (label (basic-xref-find-label identifier))
-          (variables (basic-xref-find-variable identifier))
-          (constants (basic-xref-find-constant identifier)))
-      (when line-number
-        (push (basic-xref-make-xref (format "%s (line number)" identifier) (current-buffer) line-number) xrefs))
-      (when label
-        (push (basic-xref-make-xref (format "%s (label)" identifier) (current-buffer) label) xrefs))
-      (cl-loop for variable in variables do
-            (push (basic-xref-make-xref (format "%s (variable)" identifier) (current-buffer) variable) xrefs))
-      (cl-loop for constant in constants do
-            (push (basic-xref-make-xref (format "%s (constant)" identifier) (current-buffer) constant) xrefs))
-      xrefs)))
+  (let ((line-number (basic-xref-find-line-number identifier))
+        (label (basic-xref-find-label identifier))
+        (variables (basic-xref-find-variable identifier))
+        (constants (basic-xref-find-constant identifier))
+        (fun (basic-xref-find-function identifier))
+        (parameter (basic-xref-find-parameter identifier))
+        xrefs)
+    (when line-number
+      (push (basic-xref-make-xref (format "%s (line number)" identifier) (current-buffer) line-number) xrefs))
+    (when label
+      (push (basic-xref-make-xref (format "%s (label)" identifier) (current-buffer) label) xrefs))
+    (cl-loop for variable in variables do
+      (push (basic-xref-make-xref (format "%s (variable)" identifier) (current-buffer) variable) xrefs))
+    (cl-loop for constant in constants do
+      (push (basic-xref-make-xref (format "%s (constant)" identifier) (current-buffer) constant) xrefs))
+    (when fun
+      (push (basic-xref-make-xref (format "%s (function)" identifier) (current-buffer) fun) xrefs))
+    (when parameter
+      (push (basic-xref-make-xref (format "%s (parameter)" identifier) (current-buffer) parameter) xrefs))
+    xrefs))
 
 (defun basic-xref-find-line-number (line-number)
   "Return the buffer position where LINE-NUMBER is defined.
@@ -748,7 +755,7 @@ If VARIABLE is not found, return nil."
     (let (positions)
       ;; Search for "dim ... VARIABLE [subscripts] as"
       (while (re-search-forward (concat "\\_<dim\\_>.*"
-                                        "\\_<\\(" variable "\\)\\_>"
+                                        "\\_<\\(" (regexp-quote variable) "\\)\\_>"
                                         "\\((.*)\\)?"
                                         "\\s-+as")
                                 nil
@@ -764,12 +771,39 @@ If CONSTANT is not found, return nil."
     (let (positions)
       ;; Search for "const ... CONSTANT ="
       (while (re-search-forward (concat "\\_<const\\_>.*"
-                                        "\\_<\\(" constant "\\)\\_>"
+                                        "\\_<\\(" (regexp-quote constant) "\\)\\_>"
                                         "\\s-+=")
                                 nil
                                 t)
         (push (match-beginning 1) positions))
       positions)))
+
+(defun basic-xref-find-function (fun)
+  "Return the buffer position where FUN is defined.
+If FUN is not found, return nil."
+  (save-excursion
+    (goto-char (point-min))
+    ;; Search for "def FUN"
+    (when (re-search-forward (concat "\\_<def\\_>\\s-+"
+                                     "\\_<\\(" (regexp-quote fun) "\\)\\_>")
+                             nil
+                             t)
+      (match-beginning 1))))
+
+(defun basic-xref-find-parameter (parameter)
+  "Return the buffer position where PARAMETER is defined.
+If PARAMETER is not found, return nil."
+  (save-excursion
+    (let ((end (point)))
+      ;; Find beginning of function
+      (when (re-search-backward "def\\s-+fn" nil t)
+        ;; Search for "def ... PARAMETER as"
+        (when (re-search-forward (concat "\\_<def\\_>.*"
+                                         "\\_<\\(" (regexp-quote parameter) "\\)\\_>"
+                                         "\\s-+as")
+                                 end
+                                 t)
+          (match-beginning 1))))))
 
 ;; ----------------------------------------------------------------------------
 ;; Word boundaries (based on subword-mode):
@@ -895,6 +929,8 @@ Commands:
 
 \\[newline] can automatically insert a fresh line number if
 `basic-auto-number' is set.  Default is disabled.
+
+\\[xref-find-definitions] looks up the identifier at point.
 
 Customization:
 
@@ -1060,7 +1096,7 @@ Derived from `basic-mode'."
     (append basic-functions '("tab")))
   (setq basic-keywords
     (append basic-keywords '("on")))
-  
+
   (basic-mode-initialize))
 
 ;;;###autoload

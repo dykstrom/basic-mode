@@ -159,9 +159,9 @@ value configured in basic-line-number-cols while formatting.
 ### Navigation
 
 Package basic-mode also provides additional functionality to navigate in the
-source code. _M-._ will find and move to the line number, label, variable, or
-constant at point, and _M-,_ will move back again. For more information, see
-function xref-find-definitions.
+source code. _M-._ will find and move to the definition of the identifier at
+point, and _M-,_ will move back again. For more information, see function
+xref-find-definitions.
 
 
 ## Configuration
